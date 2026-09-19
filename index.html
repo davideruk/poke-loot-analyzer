@@ -72,6 +72,7 @@
   /* auth gate */
   #authGate{position:fixed;inset:0;background:radial-gradient(circle at 50% 0%,#1b2130,#0e1016);
     display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+  #authGate.hidden{display:none}   /* precisa vencer o #authGate acima (especificidade) */
   .auth-card{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--border);
     border-radius:16px;padding:28px}
   .auth-card h2{margin:0 0 4px;display:flex;align-items:center;gap:10px;font-size:20px}
@@ -108,7 +109,7 @@
       <span id="switchTxt">Ainda não tem conta?</span>
       <button class="btn link" id="switchBtn">Criar conta</button>
     </div>
-    <div style="text-align:center;margin-top:14px;font-size:11px;color:#4a5163">v3 · entrada direta</div>
+    <div style="text-align:center;margin-top:14px;font-size:11px;color:#4a5163">v4 · overlay corrigido</div>
   </div>
 </div>
 
