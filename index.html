@@ -117,6 +117,16 @@
   .auth-card .field{margin-bottom:13px}
   .auth-card button.btn{width:100%;margin-top:8px;padding:13px}
   .switch{text-align:center;margin-top:18px;font-size:14px;color:var(--muted)}
+  .chart-box{position:relative}
+  .chart-box .zoom{position:absolute;top:12px;right:14px;font-size:11px;color:var(--faint);pointer-events:none}
+  #chartModal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(5,7,16,.72)}
+  #chartModal.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-card);
+    padding:24px;max-width:640px;width:100%;max-height:90vh;overflow:auto}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .modal-head h3{margin:0;font-size:17px;font-weight:800}
+  #modalClose{background:var(--panel2);border:1px solid var(--border);color:var(--txt);border-radius:var(--pill);width:34px;height:34px;cursor:pointer;font-size:16px}
+  .modal-canvas{height:300px;margin-bottom:16px}
 </style>
 </head>
 <body>
@@ -144,7 +154,7 @@
       <span id="switchTxt">Ainda não tem conta?</span>
       <button class="btn link" id="switchBtn">Criar conta</button>
     </div>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v12 · LIMPO</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v13 · DASHBOARD+</div>
   </div>
 </div>
 
@@ -198,10 +208,10 @@
         <div class="grid" id="statGrid"></div>
       </div>
       <div class="charts">
-        <div class="chart-box"><h3>💰 Drops mais valiosos</h3><canvas id="chDrops"></canvas></div>
-        <div class="chart-box"><h3>🗡️ Dano causado por elemento</h3><canvas id="chDmgEl"></canvas></div>
-        <div class="chart-box"><h3>☠️ Inimigos mais derrotados</h3><canvas id="chEnemies"></canvas></div>
-        <div class="chart-box"><h3>🛡️ Dano causado × recebido (top inimigos)</h3><canvas id="chDmgFoe"></canvas></div>
+        <div class="chart-box"><span class="zoom">⤢ ampliar</span><h3>💰 Drops mais valiosos</h3><canvas id="chDrops"></canvas></div>
+        <div class="chart-box"><span class="zoom">⤢ ampliar</span><h3>🗡️ Dano causado por elemento</h3><canvas id="chDmgEl"></canvas></div>
+        <div class="chart-box"><span class="zoom">⤢ ampliar</span><h3>☠️ Inimigos mais derrotados</h3><canvas id="chEnemies"></canvas></div>
+        <div class="chart-box"><span class="zoom">⤢ ampliar</span><h3>🛡️ Dano causado × recebido (top inimigos)</h3><canvas id="chDmgFoe"></canvas></div>
       </div>
       <div class="card">
         <h2>💎 Drops</h2>
@@ -269,6 +279,14 @@
       <div class="msg" id="mineMsg"></div>
     </div>
   </section>
+</div>
+
+<div id="chartModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modalTitle">Gráfico</h3><button id="modalClose">✕</button></div>
+    <div class="modal-canvas"><canvas id="modalCanvas"></canvas></div>
+    <table id="modalTable"></table>
+  </div>
 </div>
 </div>
 
@@ -394,19 +412,28 @@ function renderDashboard(data,summary){
   ];
   const g=$('#statGrid'); g.innerHTML='';
   stats.forEach(([k,v,c])=>g.appendChild(el('div','stat',`<div class="k">${k}</div><div class="v ${c}">${v}</div>`)));
+  // Drops (donut) — dados reais: item x valor total
   const drops=(data.Drops||[]).slice().sort((a,b)=>(b['Total price']||0)-(a['Total price']||0));
-  drawPie('chDrops',drops.filter(d=>d['Total price']>0).slice(0,8).map(d=>d.Item.trim()),
-          drops.filter(d=>d['Total price']>0).slice(0,8).map(d=>d['Total price']));
+  const dPos=drops.filter(d=>d['Total price']>0).slice(0,8);
+  const dL=dPos.map(d=>d.Item.trim()), dV=dPos.map(d=>d['Total price']);
+  draw('chDrops',pieCfg(dL,dV));
+  registerChart('chDrops','💰 Drops mais valiosos',()=>pieCfg(dL,dV),['Item','Valor'],dL.map((l,i)=>[l,fmt(dV[i])]));
   fillTable('#dropsTable',drops);
   fillTable('#suppliesTable',(data.Supplies||[]).slice().sort((a,b)=>(b['Total price']||0)-(a['Total price']||0)));
+  // Dano por elemento
   const byEl={}; (data.Damage||[]).forEach(d=>byEl[d.Element]=(byEl[d.Element]||0)+(d['Damage dealt']||0));
   const ee=Object.entries(byEl).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  drawBar('chDmgEl',ee.map(e=>e[0]),ee.map(e=>e[1]),'Dano');
+  draw('chDmgEl',barCfg(ee.map(e=>e[0]),ee.map(e=>e[1]),'Dano'));
+  registerChart('chDmgEl','🗡️ Dano causado por elemento',()=>barCfg(ee.map(e=>e[0]),ee.map(e=>e[1]),'Dano'),['Elemento','Dano'],ee.map(e=>[e[0],fmt(e[1])]));
+  // Inimigos derrotados
   const en=(data['Enemies Defeated']||[]).slice().sort((a,b)=>(b.Count||0)-(a.Count||0)).slice(0,10);
-  drawBar('chEnemies',en.map(e=>e.Enemy),en.map(e=>e.Count),'Kills',true);
+  draw('chEnemies',barCfg(en.map(e=>e.Enemy),en.map(e=>e.Count),'Kills',true));
+  registerChart('chEnemies','☠️ Inimigos mais derrotados',()=>barCfg(en.map(e=>e.Enemy),en.map(e=>e.Count),'Kills',true),['Inimigo','Kills'],en.map(e=>[e.Enemy+(e.Rare?' (raro)':''),fmt(e.Count)]));
+  // Dano causado x recebido
   const foe={}; (data.Damage||[]).forEach(d=>{foe[d.Enemy]=foe[d.Enemy]||{dealt:0,taken:0};foe[d.Enemy].dealt+=(d['Damage dealt']||0);foe[d.Enemy].taken+=(d['Damage taken']||0);});
   const ft=Object.entries(foe).sort((a,b)=>b[1].dealt-a[1].dealt).slice(0,8);
-  drawGrouped('chDmgFoe',ft.map(f=>f[0]),ft.map(f=>f[1].dealt),ft.map(f=>f[1].taken));
+  draw('chDmgFoe',groupedCfg(ft.map(f=>f[0]),ft.map(f=>f[1].dealt),ft.map(f=>f[1].taken)));
+  registerChart('chDmgFoe','🛡️ Dano causado × recebido',()=>groupedCfg(ft.map(f=>f[0]),ft.map(f=>f[1].dealt),ft.map(f=>f[1].taken)),['Inimigo','Causado','Recebido'],ft.map(f=>[f[0],fmt(f[1].dealt),fmt(f[1].taken)]));
 }
 function fillTable(sel,arr){
   const tb=$(sel+' tbody'); tb.innerHTML='';
@@ -419,16 +446,54 @@ function fillTable(sel,arr){
 
 // ===== CHARTS =====
 function destroy(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
-const gridColor='#2b3160', tickColor='#9aa3c7';
-function drawPie(id,labels,values){ destroy(id);
-  charts[id]=new Chart($('#'+id),{type:'doughnut',data:{labels,datasets:[{data:values,backgroundColor:PAL,borderColor:'#141830',borderWidth:2}]},
-    options:{plugins:{legend:{labels:{color:tickColor,font:{size:11}},position:'right'}}}});}
-function drawBar(id,labels,values,label,flame){ destroy(id);
-  charts[id]=new Chart($('#'+id),{type:'bar',data:{labels,datasets:[{label,data:values,backgroundColor:flame?'#ff7a18':'#38a8ff',borderRadius:5}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:tickColor},grid:{color:gridColor}},y:{ticks:{color:tickColor},grid:{display:false}}}}});}
-function drawGrouped(id,labels,dealt,taken){ destroy(id);
-  charts[id]=new Chart($('#'+id),{type:'bar',data:{labels,datasets:[{label:'Causado',data:dealt,backgroundColor:'#38d39f',borderRadius:4},{label:'Recebido',data:taken,backgroundColor:'#ff5a5a',borderRadius:4}]},
-    options:{plugins:{legend:{labels:{color:tickColor}}},scales:{x:{ticks:{color:tickColor,font:{size:10}},grid:{display:false}},y:{ticks:{color:tickColor},grid:{color:gridColor}}}}});}
+const gridColor='#232c4d', tickColor='#98a0c4';
+// fabricas de config (retornam objeto novo a cada chamada)
+function pieCfg(labels,values){
+  return {type:'doughnut',
+    data:{labels:labels,datasets:[{data:values,backgroundColor:PAL,borderColor:'#121a30',borderWidth:2}]},
+    options:{plugins:{legend:{labels:{color:tickColor,font:{size:11}},position:'right'}}}
+  };
+}
+function barCfg(labels,values,label,flame){
+  return {type:'bar',
+    data:{labels:labels,datasets:[{label:label,data:values,backgroundColor:flame?'#ff8a1f':'#3987e5',borderRadius:5}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:tickColor},grid:{color:gridColor}},y:{ticks:{color:tickColor},grid:{display:false}}}}
+  };
+}
+function groupedCfg(labels,dealt,taken){
+  return {type:'bar',
+    data:{labels:labels,datasets:[{label:'Causado',data:dealt,backgroundColor:'#199e70',borderRadius:4},{label:'Recebido',data:taken,backgroundColor:'#d55181',borderRadius:4}]},
+    options:{plugins:{legend:{labels:{color:tickColor}}},
+      scales:{x:{ticks:{color:tickColor,font:{size:10}},grid:{display:false}},y:{ticks:{color:tickColor},grid:{color:gridColor}}}}
+  };
+}
+function draw(id,cfg){ destroy(id); charts[id]=new Chart($('#'+id),cfg); }
+
+// registro pra o clique-ampliar (cada grafico guarda: titulo, fabrica de config e a tabela)
+const DASH={};
+function registerChart(id,title,make,cols,rows){ DASH[id]={title,make,cols,rows}; }
+
+let modalChart=null;
+function openChart(id){
+  const m=DASH[id]; if(!m) return;
+  $('#modalTitle').textContent=m.title;
+  const head='<thead><tr>'+m.cols.map((c,i)=>`<th class="${i?'num':''}">${c}</th>`).join('')+'</tr></thead>';
+  const body='<tbody>'+m.rows.map(r=>'<tr>'+r.map((v,i)=>`<td class="${i?'num':''}">${v}</td>`).join('')+'</tr>').join('')+'</tbody>';
+  $('#modalTable').innerHTML=head+body;
+  if(modalChart){ modalChart.destroy(); modalChart=null; }
+  const cfg=m.make(); cfg.options=cfg.options||{}; cfg.options.maintainAspectRatio=false; cfg.options.responsive=true;
+  $('#chartModal').classList.add('open');
+  modalChart=new Chart($('#modalCanvas'),cfg);
+}
+function closeChart(){ if(modalChart){modalChart.destroy();modalChart=null;} $('#chartModal').classList.remove('open'); }
+document.addEventListener('click',e=>{ if(e.target.id==='chartModal'||e.target.id==='modalClose') closeChart(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeChart(); });
+// clique nos cards de grafico do dashboard
+document.querySelectorAll('#tab-dashboard .chart-box').forEach(box=>{
+  box.style.cursor='pointer';
+  box.addEventListener('click',()=>{ const cv=box.querySelector('canvas'); if(cv&&DASH[cv.id]) openChart(cv.id); });
+});
 
 // ===== IMPORT ACTIONS =====
 $('#parseBtn').onclick=()=>{
