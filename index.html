@@ -35,10 +35,8 @@
     animation:sweep 6s linear infinite}
   @keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
   .brand{display:flex;align-items:center;gap:12px;z-index:1}
-  .logo{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(circle at 50% 38%, #1a2038, #0b0e1c);
-    box-shadow:0 0 22px rgba(255,90,50,.45), inset 0 0 0 1px rgba(255,180,120,.25)}
-  .logo svg{width:82%;height:82%;display:block;filter:drop-shadow(0 0 5px rgba(255,120,40,.55))}
+  .logo{width:48px;height:48px;display:flex;align-items:center;justify-content:center}
+  .logo svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(255,120,40,.35))}
   .title{font-size:22px;font-weight:900;line-height:1;
     background:linear-gradient(90deg,#fff,#ffd9a3 40%,var(--flame));-webkit-background-clip:text;background-clip:text;color:transparent}
   .subtitle{font-size:12px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
@@ -159,7 +157,7 @@
       <span id="switchTxt">Ainda não tem conta?</span>
       <button class="btn link" id="switchBtn">Criar conta</button>
     </div>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v8 · FLAME</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v9 · MEGA STONE HD</div>
   </div>
 </div>
 
@@ -589,37 +587,38 @@ const SAMPLE = {"Enemies Defeated":[{"Enemy":"Aerodactyl","Rare":true,"Count":2,
 // ===== LOGO (mega stone customizado, SVG) =====
 const LOGO_SVG = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="glow" cx="50%" cy="60%" r="55%">
-      <stop offset="0%" stop-color="#ff7a18" stop-opacity=".55"/>
-      <stop offset="100%" stop-color="#ff7a18" stop-opacity="0"/>
+    <radialGradient id="ringG" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#ffe0a3"/>
+      <stop offset="45%" stop-color="#ff8f2b"/>
+      <stop offset="100%" stop-color="#b64f0e"/>
     </radialGradient>
-    <linearGradient id="flameG" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0%" stop-color="#ff2d55"/>
-      <stop offset="45%" stop-color="#ff6a1a"/>
-      <stop offset="100%" stop-color="#ffd23f"/>
+    <radialGradient id="coreG" cx="40%" cy="34%" r="80%">
+      <stop offset="0%" stop-color="#fff6d8"/>
+      <stop offset="100%" stop-color="#ffd98a"/>
+    </radialGradient>
+    <linearGradient id="redG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff5a3c"/>
+      <stop offset="100%" stop-color="#d81f1f"/>
     </linearGradient>
-    <linearGradient id="innerG" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0%" stop-color="#38a8ff"/>
-      <stop offset="55%" stop-color="#ff9d2e"/>
-      <stop offset="100%" stop-color="#fff6cf"/>
+    <linearGradient id="yelG" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff9d2e"/>
+      <stop offset="100%" stop-color="#ffe83f"/>
     </linearGradient>
   </defs>
-  <circle cx="32" cy="36" r="22" fill="url(#glow)"/>
-  <path d="M35 5
-    c 3 10 13 15 13 27
-    a 16 16 0 0 1 -32 0
-    c 0 -8 5 -12 8 -16
-    c 1 5 4 6 6 5
-    c 4 -2 2 -9 -2 -12
-    c 5 1 7 -5 7 -9 Z"
-    fill="url(#flameG)" stroke="#ffe4a0" stroke-width="1" stroke-opacity=".5" stroke-linejoin="round"/>
-  <path d="M34 27
-    c 3 5 6 9 6 15
-    a 7 7 0 0 1 -13 3
-    c 4 0 6 -4 4 -7
-    c 3 -3 2 -8 3 -11 Z"
-    fill="url(#innerG)"/>
-  <circle cx="32" cy="42" r="3" fill="#fff8e6"/>
+  <ellipse cx="32" cy="59" rx="19" ry="3.5" fill="#000" opacity="0.28"/>
+  <circle cx="32" cy="32" r="30" fill="url(#ringG)"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#7a3406" stroke-width="1.4"/>
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#ffedc4" stroke-width="1" opacity="0.55"/>
+  <circle cx="32" cy="32" r="22.5" fill="url(#coreG)" stroke="#8a3c08" stroke-width="1"/>
+  <!-- swirl chama (duas metades entrelacadas) -->
+  <circle cx="32" cy="32" r="22.5" fill="url(#yelG)"/>
+  <path d="M32 9.5 A22.5 22.5 0 0 1 32 54.5 A11.25 11.25 0 0 1 32 32 A11.25 11.25 0 0 0 32 9.5 Z" fill="url(#redG)"/>
+  <!-- pontas de chama -->
+  <path d="M32 9.5 C34 14 30 17 32 21 C33 17 36 15 32 9.5 Z" fill="url(#yelG)"/>
+  <path d="M32 54.5 C30 50 34 47 32 43 C31 47 28 49 32 54.5 Z" fill="url(#redG)"/>
+  <!-- brilho de vidro -->
+  <ellipse cx="24" cy="21" rx="10" ry="6.5" fill="#ffffff" opacity="0.30" transform="rotate(-32 24 21)"/>
+  <circle cx="25" cy="17" r="3.1" fill="#ffffff" opacity="0.92"/>
 </svg>`;
 document.querySelectorAll('.logo').forEach(e=>{ e.innerHTML = LOGO_SVG; });
 
