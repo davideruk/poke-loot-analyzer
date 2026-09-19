@@ -154,7 +154,7 @@
       <span id="switchTxt">Ainda não tem conta?</span>
       <button class="btn link" id="switchBtn">Criar conta</button>
     </div>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v13 · DASHBOARD+</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v14 · EVOLUÇÃO+</div>
   </div>
 </div>
 
@@ -235,7 +235,7 @@
         </div>
         <button class="btn sec sm" id="refreshEvo" style="margin-top:20px">Atualizar</button>
       </div>
-      <div class="chart-box" style="min-height:340px;margin-top:10px"><canvas id="chEvo"></canvas></div>
+      <div class="chart-box" style="height:380px;margin-top:10px"><canvas id="chEvo"></canvas></div>
       <div class="grid" id="evoStats" style="margin-top:14px"></div>
       <div class="msg" id="evoMsg"></div>
     </div>
@@ -577,14 +577,20 @@ function renderEvolution(){
   const rows=allSessions.filter(r=>r.player===player)
     .slice().sort((a,b)=>new Date(whenOf(a))-new Date(whenOf(b)));
   destroy('chEvo');
-  if(!rows.length){ $('#evoStats').innerHTML=''; return showMsg('#evoMsg','info','Sem sessões para este player.'); }
-  $('#evoMsg').style.display='none';
+  if(!rows.length){ $('#evoStats').innerHTML=''; return showMsg('#evoMsg','info','Sem sessões salvas para este player. Salve algumas hunts na aba Importar.'); }
+  if(rows.length===1){ showMsg('#evoMsg','info','Só há 1 sessão salva deste player — salve mais hunts (em horários diferentes) para a linha de evolução aparecer.'); }
+  else{ $('#evoMsg').style.display='none'; }
   const labels=rows.map(r=>new Date(whenOf(r)).toLocaleDateString('pt-BR')+' '+new Date(whenOf(r)).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
   const gctx=$('#chEvo').getContext('2d');
-  const grad=gctx.createLinearGradient(0,0,0,320); grad.addColorStop(0,'rgba(255,122,24,.45)'); grad.addColorStop(1,'rgba(255,122,24,0)');
+  const grad=gctx.createLinearGradient(0,0,0,340); grad.addColorStop(0,'rgba(255,90,31,.35)'); grad.addColorStop(1,'rgba(255,90,31,0)');
   charts['chEvo']=new Chart($('#chEvo'),{type:'line',
-    data:{labels,datasets:[{label:'Profit / hora',data:rows.map(r=>r.profit_per_hour||0),borderColor:'#ff7a18',backgroundColor:grad,fill:true,tension:.3,pointBackgroundColor:'#ffcf3f',pointRadius:4}]},
-    options:{plugins:{legend:{labels:{color:tickColor}}},scales:{x:{ticks:{color:tickColor,maxRotation:60,minRotation:30,font:{size:10}},grid:{color:gridColor}},y:{ticks:{color:tickColor},grid:{color:gridColor}}}}});
+    data:{labels,datasets:[{label:'Profit / hora',data:rows.map(r=>r.profit_per_hour||0),
+      borderColor:'#ff5a1f',borderWidth:2.5,backgroundColor:grad,fill:true,tension:.35,
+      pointBackgroundColor:'#ff8a1f',pointBorderColor:'#121a30',pointBorderWidth:2,pointRadius:5,pointHoverRadius:7}]},
+    options:{maintainAspectRatio:false,responsive:true,
+      plugins:{legend:{labels:{color:tickColor}}},
+      scales:{x:{ticks:{color:'#6b7398',maxRotation:60,minRotation:30,font:{size:10}},grid:{color:gridColor}},
+              y:{ticks:{color:tickColor,callback:v=>Number(v).toLocaleString('pt-BR')},grid:{color:gridColor}}}}});
   const phs=rows.map(r=>r.profit_per_hour||0);
   const best=Math.max(...phs), avg=Math.round(phs.reduce((a,b)=>a+b,0)/phs.length), totalProfit=rows.reduce((a,b)=>a+(b.profit||0),0);
   $('#evoStats').innerHTML=[
