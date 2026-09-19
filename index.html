@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Poke X Loot Analyzer</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0e1016; --panel:#171a24; --panel2:#1f2330; --border:#2a2f3e;
+    --txt:#e6e9f0; --muted:#8b93a7; --accent:#ffcb05; --accent2:#3b6fd4;
+    --green:#3fbf6b; --red:#e0524b; --purple:#9b6dff;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font);font-size:15px}
+  a{color:var(--accent2)}
+  header{background:linear-gradient(90deg,#171a24,#1f2330);border-bottom:1px solid var(--border);
+    padding:16px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{font-size:20px;margin:0;display:flex;align-items:center;gap:10px}
+  .logo{width:34px;height:34px;border-radius:50%;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:20px;
+    box-shadow:0 0 0 3px #d9a900 inset}
+  .tag{font-size:12px;color:var(--muted);border:1px solid var(--border);
+    border-radius:20px;padding:3px 10px}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+  .tabs{display:flex;gap:8px;margin:0 0 18px;flex-wrap:wrap}
+  .tab{background:var(--panel);border:1px solid var(--border);color:var(--muted);
+    padding:9px 16px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px}
+  .tab.active{color:#111;background:var(--accent);border-color:var(--accent)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}
+  .card h2{margin:0 0 14px;font-size:16px;display:flex;align-items:center;gap:8px}
+  textarea{width:100%;min-height:150px;background:var(--bg);color:var(--txt);
+    border:1px solid var(--border);border-radius:10px;padding:12px;font-family:monospace;font-size:13px;resize:vertical}
+  input[type=text]{width:100%;background:var(--bg);color:var(--txt);border:1px solid var(--border);
+    border-radius:8px;padding:10px;font-size:14px}
+  button.btn{background:var(--accent);color:#111;border:none;border-radius:10px;
+    padding:11px 18px;font-weight:700;cursor:pointer;font-size:14px}
+  button.btn.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--border)}
+  button.btn:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .stat .v{font-size:22px;font-weight:800;margin-top:6px}
+  .stat .v.green{color:var(--green)} .stat .v.red{color:var(--red)} .stat .v.gold{color:var(--accent)}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.charts{grid-template-columns:1fr}}
+  .chart-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;min-height:260px}
+  .chart-box h3{margin:0 0 10px;font-size:14px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .badge{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--panel2);border:1px solid var(--border)}
+  .badge.rare{background:#3a2f00;color:var(--accent);border-color:#5a4a00}
+  .msg{padding:10px 14px;border-radius:10px;margin-top:12px;font-size:14px;display:none}
+  .msg.ok{background:#12331f;color:#7ee2a0;display:block}
+  .msg.err{background:#3a1614;color:#ff9c95;display:block}
+  .msg.info{background:#132033;color:#9cc4ff;display:block}
+  .muted{color:var(--muted)}
+  .hidden{display:none}
+  .pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:20px;background:var(--panel2);border:1px solid var(--border);color:var(--muted)}
+  .rank-1{color:var(--accent);font-weight:800}
+  .rank-2{color:#c9c9c9;font-weight:700}
+  .rank-3{color:#cd7f32;font-weight:700}
+  code{background:var(--panel2);padding:2px 6px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="logo">⚡</span> Poke X Loot Analyzer</h1>
+  <span class="tag" id="dbTag">banco: desconectado</span>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <div class="tab active" data-tab="import">📥 Importar</div>
+    <div class="tab" data-tab="dashboard">📊 Dashboard</div>
+    <div class="tab" data-tab="ranking">🏆 Ranking</div>
+    <div class="tab" data-tab="config">⚙️ Config</div>
+  </div>
+
+  <section id="tab-import">
+    <div class="card">
+      <h2>📥 Importar sessão do jogo</h2>
+      <p class="muted">Cole aqui o JSON que o analiser do Poke X gera. Ele é processado no seu navegador na hora.</p>
+      <div class="row" style="margin-bottom:10px">
+        <input type="text" id="uploadedBy" placeholder="Seu apelido (opcional, aparece no ranking)" style="max-width:320px" />
+        <button class="btn sec" id="sampleBtn">Usar exemplo</button>
+        <label class="btn sec" style="display:inline-block">📂 Abrir arquivo
+          <input type="file" id="fileInput" accept=".json,application/json" class="hidden" />
+        </label>
+      </div>
+      <textarea id="jsonInput" placeholder='{ "Session": { ... }, "Drops": [ ... ], ... }'></textarea>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="parseBtn">Analisar</button>
+        <button class="btn sec" id="saveBtn" disabled>💾 Salvar no banco</button>
+      </div>
+      <div class="msg" id="importMsg"></div>
+    </div>
+  </section>
+
+  <section id="tab-dashboard" class="hidden">
+    <div id="dashEmpty" class="card"><p class="muted">Importe uma sessão na aba <b>Importar</b> para ver o dashboard.</p></div>
+    <div id="dashContent" class="hidden">
+      <div class="card">
+        <h2 id="dashTitle">Sessão</h2>
+        <div class="grid" id="statGrid"></div>
+      </div>
+      <div class="charts">
+        <div class="chart-box"><h3>💰 Drops mais valiosos</h3><canvas id="chDrops"></canvas></div>
+        <div class="chart-box"><h3>🗡️ Dano causado por elemento</h3><canvas id="chDmgEl"></canvas></div>
+        <div class="chart-box"><h3>☠️ Inimigos mais derrotados</h3><canvas id="chEnemies"></canvas></div>
+        <div class="chart-box"><h3>🛡️ Dano causado × recebido (top inimigos)</h3><canvas id="chDmgFoe"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>💎 Drops</h2>
+        <table id="dropsTable"><thead><tr><th>Item</th><th class="num">Qtd</th><th class="num">Unit.</th><th class="num">Total</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h2>🧪 Supplies gastos</h2>
+        <table id="suppliesTable"><thead><tr><th>Item</th><th class="num">Qtd</th><th class="num">Unit.</th><th class="num">Total</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-ranking" class="hidden">
+    <div class="card">
+      <h2>🏆 Ranking dos amigos</h2>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn sec" id="refreshRank">Atualizar</button>
+        <span class="pill" id="rankInfo">—</span>
+      </div>
+      <table id="rankTable">
+        <thead><tr><th>#</th><th>Player</th><th>Enviado por</th><th class="num">Profit/h</th><th class="num">Profit</th><th class="num">Kills</th><th class="num">Duração</th><th>Data</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="msg" id="rankMsg"></div>
+    </div>
+  </section>
+
+  <section id="tab-config" class="hidden">
+    <div class="card">
+      <h2>⚙️ Conectar ao banco (Supabase)</h2>
+      <p class="muted">Cole a URL e a chave <b>anon public</b> do seu projeto Supabase (em Project Settings → API). Fica salvo só no seu navegador.</p>
+      <p style="margin:6px 0"><label class="muted">Project URL</label>
+        <input type="text" id="cfgUrl" placeholder="https://xxxxx.supabase.co" /></p>
+      <p style="margin:6px 0"><label class="muted">Anon public key</label>
+        <input type="text" id="cfgKey" placeholder="eyJhbGciOi..." /></p>
+      <div class="row">
+        <button class="btn" id="saveCfg">Salvar e conectar</button>
+        <button class="btn sec" id="clearCfg">Desconectar</button>
+      </div>
+      <div class="msg" id="cfgMsg"></div>
+      <p class="muted" style="margin-top:16px;font-size:13px">Ainda não criou o banco? Rode o arquivo <code>schema.sql</code> no SQL Editor do Supabase (passo a passo no <code>README.md</code>).</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const fmt = n => (n==null||isNaN(n)) ? '0' : Number(n).toLocaleString('pt-BR');
+const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const PAL = ['#ffcb05','#3b6fd4','#3fbf6b','#9b6dff','#e0524b','#43c6d8','#f08a3c','#d84fa0','#7ec24b','#a0a4b0'];
+let charts = {};
+let currentData = null;
+let currentSummary = null;
+let sb = null;
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  ['import','dashboard','ranking','config'].forEach(n=>$('#tab-'+n).classList.add('hidden'));
+  $('#tab-'+t.dataset.tab).classList.remove('hidden');
+  if(t.dataset.tab==='ranking') loadRanking();
+});
+
+function initSupabase(){
+  const url = localStorage.getItem('pkx_url');
+  const key = localStorage.getItem('pkx_key');
+  if(url && key && window.supabase){
+    sb = window.supabase.createClient(url, key);
+    $('#dbTag').textContent = 'banco: conectado';
+    $('#dbTag').style.color = 'var(--green)';
+    $('#cfgUrl').value = url; $('#cfgKey').value = key;
+  }else{
+    sb = null;
+    $('#dbTag').textContent = 'banco: desconectado';
+    $('#dbTag').style.color = 'var(--muted)';
+  }
+  updateSaveBtn();
+}
+$('#saveCfg').onclick = ()=>{
+  const url=$('#cfgUrl').value.trim(), key=$('#cfgKey').value.trim();
+  if(!url||!key){ return showMsg('#cfgMsg','err','Preencha URL e chave.'); }
+  localStorage.setItem('pkx_url',url); localStorage.setItem('pkx_key',key);
+  initSupabase();
+  showMsg('#cfgMsg','ok','Conectado! Agora você pode salvar sessões e ver o ranking.');
+};
+$('#clearCfg').onclick = ()=>{
+  localStorage.removeItem('pkx_url'); localStorage.removeItem('pkx_key');
+  $('#cfgUrl').value=''; $('#cfgKey').value='';
+  initSupabase(); showMsg('#cfgMsg','info','Desconectado.');
+};
+function updateSaveBtn(){ $('#saveBtn').disabled = !(sb && currentData); }
+function showMsg(sel,kind,txt){ const m=$(sel); m.className='msg '+kind; m.textContent=txt; }
+
+function parseSession(data){
+  const S = data.Session || {};
+  return {
+    game_session_id: S['Session ID'] ?? null,
+    player: S.Player || (data['Enemies Defeated']?.[0]?.Player) || 'Desconhecido',
+    session_type: S['Session type'] ?? null,
+    start_time: S.Start ? S.Start.replace(' ','T') : null,
+    duration_seconds: S['Duration seconds'] ?? null,
+    duration_label: S.Duration ?? null,
+    profit: S.Profit ?? null,
+    profit_per_hour: S['Profit per hour'] ?? null,
+    raw_gains: S['Raw gains'] ?? null,
+    supplies_cost: S.Supplies ?? null,
+    kills: S.Kills ?? null,
+    rare_kills: S['Rare kills'] ?? null,
+    kills_per_hour: S['Kills per hour'] ?? null,
+    damage_dealt: S['Damage dealt'] ?? null,
+    damage_taken: S['Damage taken'] ?? null,
+  };
+}
+
+function renderDashboard(data, summary){
+  $('#dashEmpty').classList.add('hidden');
+  $('#dashContent').classList.remove('hidden');
+  $('#dashTitle').textContent = `Sessão de ${summary.player}` + (summary.game_session_id?` · #${summary.game_session_id}`:'');
+  const stats = [
+    ['Profit', fmt(summary.profit), summary.profit>=0?'green':'red'],
+    ['Profit / hora', fmt(summary.profit_per_hour), summary.profit_per_hour>=0?'green':'red'],
+    ['Ganhos brutos', fmt(summary.raw_gains), 'gold'],
+    ['Supplies', fmt(summary.supplies_cost), 'red'],
+    ['Kills', fmt(summary.kills), ''],
+    ['Kills raras', fmt(summary.rare_kills), 'gold'],
+    ['Kills / hora', fmt(summary.kills_per_hour), ''],
+    ['Duração', summary.duration_label || (summary.duration_seconds+'s'), ''],
+    ['Dano causado', fmt(summary.damage_dealt), 'green'],
+    ['Dano recebido', fmt(summary.damage_taken), 'red'],
+  ];
+  const g = $('#statGrid'); g.innerHTML='';
+  stats.forEach(([k,v,c])=>{
+    g.appendChild(el('div','stat',`<div class="k">${k}</div><div class="v ${c}">${v}</div>`));
+  });
+  const drops = (data.Drops||[]).slice().sort((a,b)=>(b['Total price']||0)-(a['Total price']||0));
+  drawPie('chDrops', drops.filter(d=>d['Total price']>0).slice(0,8).map(d=>d.Item.trim()),
+          drops.filter(d=>d['Total price']>0).slice(0,8).map(d=>d['Total price']));
+  fillTable('#dropsTable', drops);
+  fillTable('#suppliesTable', (data.Supplies||[]).slice().sort((a,b)=>(b['Total price']||0)-(a['Total price']||0)));
+  const byEl = {};
+  (data.Damage||[]).forEach(d=>{ byEl[d.Element]=(byEl[d.Element]||0)+(d['Damage dealt']||0); });
+  const elEntries = Object.entries(byEl).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  drawBar('chDmgEl', elEntries.map(e=>e[0]), elEntries.map(e=>e[1]), 'Dano');
+  const en = (data['Enemies Defeated']||[]).slice().sort((a,b)=>(b.Count||0)-(a.Count||0)).slice(0,10);
+  drawBar('chEnemies', en.map(e=>e.Enemy), en.map(e=>e.Count), 'Kills', true);
+  const foe = {};
+  (data.Damage||[]).forEach(d=>{
+    foe[d.Enemy]=foe[d.Enemy]||{dealt:0,taken:0};
+    foe[d.Enemy].dealt+=(d['Damage dealt']||0); foe[d.Enemy].taken+=(d['Damage taken']||0);
+  });
+  const foeTop = Object.entries(foe).sort((a,b)=>b[1].dealt-a[1].dealt).slice(0,8);
+  drawGrouped('chDmgFoe', foeTop.map(f=>f[0]), foeTop.map(f=>f[1].dealt), foeTop.map(f=>f[1].taken));
+}
+
+function fillTable(sel, arr){
+  const tb = $(sel+' tbody'); tb.innerHTML='';
+  if(!arr.length){ tb.appendChild(el('tr',null,'<td colspan="4" class="muted">Nenhum item</td>')); return; }
+  arr.forEach(it=>{
+    const rare = it.Rare ? ' <span class="badge rare">raro</span>' : '';
+    tb.appendChild(el('tr',null,
+      `<td>${(it.Item||'').trim()}${rare}</td>
+       <td class="num">${fmt(it.Count)}</td>
+       <td class="num">${fmt(it['Unit price'])}</td>
+       <td class="num">${fmt(it['Total price'])}</td>`));
+  });
+}
+
+function destroy(id){ if(charts[id]){charts[id].destroy(); delete charts[id];} }
+const gridColor='#2a2f3e', tickColor='#8b93a7';
+function drawPie(id,labels,values){
+  destroy(id);
+  charts[id]=new Chart($('#'+id),{type:'doughnut',
+    data:{labels,datasets:[{data:values,backgroundColor:PAL,borderColor:'#171a24',borderWidth:2}]},
+    options:{plugins:{legend:{labels:{color:tickColor,font:{size:11}},position:'right'}}}});
+}
+function drawBar(id,labels,values,label,gold){
+  destroy(id);
+  charts[id]=new Chart($('#'+id),{type:'bar',
+    data:{labels,datasets:[{label,data:values,backgroundColor:gold?'#ffcb05':'#3b6fd4',borderRadius:5}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:tickColor},grid:{color:gridColor}},y:{ticks:{color:tickColor},grid:{display:false}}}}});
+}
+function drawGrouped(id,labels,dealt,taken){
+  destroy(id);
+  charts[id]=new Chart($('#'+id),{type:'bar',
+    data:{labels,datasets:[
+      {label:'Causado',data:dealt,backgroundColor:'#3fbf6b',borderRadius:4},
+      {label:'Recebido',data:taken,backgroundColor:'#e0524b',borderRadius:4}]},
+    options:{plugins:{legend:{labels:{color:tickColor}}},
+      scales:{x:{ticks:{color:tickColor,font:{size:10}},grid:{display:false}},
+              y:{ticks:{color:tickColor},grid:{color:gridColor}}}}});
+}
+
+$('#parseBtn').onclick = ()=>{
+  const raw = $('#jsonInput').value.trim();
+  if(!raw){ return showMsg('#importMsg','err','Cole o JSON primeiro.'); }
+  let data;
+  try{ data = JSON.parse(raw); }
+  catch(e){ return showMsg('#importMsg','err','JSON inválido: '+e.message); }
+  if(!data.Session){ return showMsg('#importMsg','info','Aviso: não achei a chave "Session" — pode faltar dados.'); }
+  currentData = data;
+  currentSummary = parseSession(data);
+  renderDashboard(data, currentSummary);
+  updateSaveBtn();
+  showMsg('#importMsg','ok','Analisado! Veja a aba Dashboard.' + (sb?' Você também pode salvar no banco.':' (Conecte um banco na aba Config para salvar.)'));
+  document.querySelector('.tab[data-tab="dashboard"]').click();
+};
+
+$('#saveBtn').onclick = async ()=>{
+  if(!sb||!currentSummary) return;
+  $('#saveBtn').disabled=true;
+  const row = {...currentSummary};
+  delete row.duration_label;
+  row.raw_json = currentData;
+  row.uploaded_by = $('#uploadedBy').value.trim() || null;
+  const { error } = await sb.from('sessions').insert(row);
+  $('#saveBtn').disabled=false;
+  if(error){
+    if((error.code==='23505')||/duplicate/i.test(error.message))
+      showMsg('#importMsg','info','Essa sessão já estava salva no banco.');
+    else showMsg('#importMsg','err','Erro ao salvar: '+error.message);
+  }else{
+    showMsg('#importMsg','ok','Salvo no banco! Veja no Ranking. 🏆');
+  }
+};
+
+$('#sampleBtn').onclick = ()=>{ $('#jsonInput').value = JSON.stringify(SAMPLE,null,2); };
+$('#fileInput').onchange = e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>{$('#jsonInput').value=r.result;}; r.readAsText(f);
+};
+
+$('#refreshRank').onclick = loadRanking;
+async function loadRanking(){
+  if(!sb){ $('#rankInfo').textContent='banco desconectado'; showMsg('#rankMsg','info','Conecte um banco na aba Config para ver o ranking.'); return; }
+  showMsg('#rankMsg','info','Carregando...');
+  const { data, error } = await sb.from('sessions')
+    .select('player,uploaded_by,profit_per_hour,profit,kills,duration_seconds,start_time,created_at')
+    .order('profit_per_hour',{ascending:false}).limit(50);
+  const tb=$('#rankTable tbody'); tb.innerHTML='';
+  if(error){ return showMsg('#rankMsg','err','Erro: '+error.message); }
+  if(!data.length){ $('#rankInfo').textContent='0 sessões'; return showMsg('#rankMsg','info','Nenhuma sessão salva ainda.'); }
+  $('#rankInfo').textContent = data.length+' sessões';
+  $('#rankMsg').style.display='none';
+  data.forEach((r,i)=>{
+    const rank = i<3 ? `<span class="rank-${i+1}">${i+1}º</span>` : (i+1);
+    const dur = r.duration_seconds ? new Date(r.duration_seconds*1000).toISOString().substr(11,8) : '—';
+    const date = r.created_at ? new Date(r.created_at).toLocaleDateString('pt-BR') : '—';
+    tb.appendChild(el('tr',null,
+      `<td>${rank}</td><td><b>${r.player}</b></td><td class="muted">${r.uploaded_by||'—'}</td>
+       <td class="num">${fmt(r.profit_per_hour)}</td><td class="num">${fmt(r.profit)}</td>
+       <td class="num">${fmt(r.kills)}</td><td class="num">${dur}</td><td>${date}</td>`));
+  });
+}
+
+const SAMPLE = {"Enemies Defeated":[{"Enemy":"Aerodactyl","Rare":true,"Count":2,"Player":"Killzone"},{"Enemy":"Machamp","Rare":false,"Count":9,"Player":"Killzone"},{"Enemy":"Bastiodon","Rare":false,"Count":6,"Player":"Killzone"},{"Enemy":"Pinsir","Rare":false,"Count":6,"Player":"Killzone"},{"Enemy":"Rhydon","Rare":false,"Count":6,"Player":"Killzone"},{"Enemy":"Kabutops","Rare":false,"Count":5,"Player":"Killzone"},{"Enemy":"Armaldo","Rare":false,"Count":4,"Player":"Killzone"},{"Enemy":"Hitmontop","Rare":false,"Count":4,"Player":"Killzone"},{"Enemy":"Omastar","Rare":false,"Count":3,"Player":"Killzone"}],
+"Supplies":[{"Item":"Max Revive","Total price":9100,"Count":26,"Unit price":350},{"Item":"Empty Old Ball","Total price":8500,"Count":17,"Unit price":500},{"Item":"Medicine","Total price":100,"Count":50,"Unit price":2}],
+"Damage":[{"Enemy":"Bastiodon","Damage taken":28081,"Element":"Rock","Damage dealt":0},{"Enemy":"Bastiodon","Damage taken":0,"Element":"Water","Damage dealt":538980},{"Enemy":"Armaldo","Damage taken":0,"Element":"Water","Damage dealt":394480},{"Enemy":"Kabutops","Damage taken":0,"Element":"Water","Damage dealt":306807},{"Enemy":"Omastar","Damage taken":0,"Element":"Water","Damage dealt":260088},{"Enemy":"Aerodactyl","Damage taken":0,"Element":"Water","Damage dealt":212400},{"Enemy":"Walrein","Damage taken":0,"Element":"Psychic","Damage dealt":121649},{"Enemy":"Machamp","Damage taken":0,"Element":"Fairy","Damage dealt":70016},{"Enemy":"Rhydon","Damage taken":0,"Element":"Rock","Damage dealt":87358}],
+"Session":{"Raw gains":270000,"Start":"2026-09-19 13:42:20","Damage taken":364397,"Kills per hour":73,"Damage dealt":2718328,"Session type":"player","Rare kills":2,"Supplies":17700,"Duration seconds":3032,"Kills":62,"Duration":"00:50:32","Profit":252300,"Session ID":1366,"Profit per hour":299564,"Player":"Killzone"},
+"Drops":[{"Item":"gold bar","Total price":242000,"Count":22,"Unit price":11000},{"Item":"Tyranitar ornament","Total price":15000,"Count":1,"Unit price":15000},{"Item":"gold coin","Total price":8000,"Count":80,"Unit price":100},{"Item":"precious ring","Total price":4000,"Count":1,"Unit price":4000},{"Item":"giant pearl","Total price":1000,"Count":1,"Unit price":1000},{"Item":"Meowth coin","Total price":0,"Count":1,"Unit price":0}]};
+
+initSupabase();
+</script>
+</body>
+</html>
