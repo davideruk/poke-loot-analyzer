@@ -243,7 +243,9 @@ $('#authBtn').onclick = async ()=>{
       if(error) throw error;
     }
   }catch(e){
-    showMsg('#authMsg','err', traduzErro(e.message));
+    const raw = e.message || e.error_description || JSON.stringify(e);
+    showMsg('#authMsg','err', traduzErro(raw));
+    alert('DIAGNÓSTICO (mostre isto ao Claude):\n\n' + raw);
   }finally{
     $('#authBtn').disabled = false;
   }
