@@ -108,6 +108,7 @@
       <span id="switchTxt">Ainda não tem conta?</span>
       <button class="btn link" id="switchBtn">Criar conta</button>
     </div>
+    <div style="text-align:center;margin-top:14px;font-size:11px;color:#4a5163">v3 · entrada direta</div>
   </div>
 </div>
 
@@ -233,19 +234,26 @@ $('#authBtn').onclick = async ()=>{
         email, password: pass, options:{ data:{ display_name: name } }
       });
       if(error) throw error;
-      if(!data.session){
-        showMsg('#authMsg','info','Conta criada! Confira seu email para confirmar e depois faça login.');
-        authMode='login'; setTimeout(renderAuthMode, 2500);
+      if(data.session){
+        onSession(data.session);                 // entra direto no app
+      }else{
+        // confirmacao off mas sem sessao: tenta logar automaticamente
+        const { data: d2, error: e2 } = await sb.auth.signInWithPassword({ email, password: pass });
+        if(e2){
+          showMsg('#authMsg','info','Conta criada! Agora clique em "Fazer login".');
+          authMode='login'; setTimeout(renderAuthMode, 2500);
+        }else{
+          onSession(d2.session);
+        }
       }
-      // se confirmacao estiver desligada, o onAuthStateChange ja entra
     }else{
-      const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
       if(error) throw error;
+      onSession(data.session);                    // entra direto no app
     }
   }catch(e){
     const raw = e.message || e.error_description || JSON.stringify(e);
     showMsg('#authMsg','err', traduzErro(raw));
-    alert('DIAGNÓSTICO (mostre isto ao Claude):\n\n' + raw);
   }finally{
     $('#authBtn').disabled = false;
   }
