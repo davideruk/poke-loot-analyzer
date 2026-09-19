@@ -3,93 +3,143 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Poke X Loot Analyzer</title>
+<title>Mega Loot · Poke X Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --bg:#0e1016; --panel:#171a24; --panel2:#1f2330; --border:#2a2f3e;
-    --txt:#e6e9f0; --muted:#8b93a7; --accent:#ffcb05; --accent2:#3b6fd4;
-    --green:#3fbf6b; --red:#e0524b; --purple:#9b6dff;
-    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --bg:#0a0b14; --bg2:#0f1122; --panel:#141830; --panel2:#1c2142; --border:#2b3160;
+    --txt:#eef1fb; --muted:#9aa3c7;
+    --flame:#ff7a18; --ember:#ff3860; --dragon:#38a8ff; --gold:#ffcf3f;
+    --green:#38d39f; --red:#ff5a5a;
+    --head:'Orbitron',sans-serif; --body:'Rajdhani',-apple-system,Segoe UI,Roboto,sans-serif;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font);font-size:15px}
-  a{color:var(--accent2)}
-  header{background:linear-gradient(90deg,#171a24,#1f2330);border-bottom:1px solid var(--border);
-    padding:16px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-  header h1{font-size:20px;margin:0;display:flex;align-items:center;gap:10px}
-  .logo{width:34px;height:34px;border-radius:50%;background:var(--accent);
-    display:flex;align-items:center;justify-content:center;font-size:20px;
-    box-shadow:0 0 0 3px #d9a900 inset}
+  body{margin:0;background:
+      radial-gradient(1200px 500px at 80% -10%, rgba(56,168,255,.10), transparent 60%),
+      radial-gradient(1000px 500px at 0% -5%, rgba(255,122,24,.12), transparent 55%),
+      var(--bg);
+    color:var(--txt);font-family:var(--body);font-size:16px;min-height:100vh}
+  a{color:var(--dragon)}
+  h1,h2,h3,.head{font-family:var(--head);letter-spacing:.5px}
+
+  /* HERO / HEADER */
+  header{position:relative;overflow:hidden;border-bottom:1px solid var(--border);
+    padding:18px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    background:linear-gradient(100deg,#160f1e,#12152c 45%,#0e1830)}
+  header::before{content:"";position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(255,122,24,.08),transparent);
+    animation:sweep 6s linear infinite}
+  @keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+  .brand{display:flex;align-items:center;gap:12px;z-index:1}
+  .logo{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+    font-size:24px;background:linear-gradient(135deg,var(--flame),var(--ember));
+    box-shadow:0 0 22px rgba(255,80,60,.55), inset 0 0 12px rgba(255,255,255,.25)}
+  .title{font-size:22px;font-weight:900;line-height:1;
+    background:linear-gradient(90deg,#fff,#ffd9a3 40%,var(--flame));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .subtitle{font-size:12px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
   .spacer{flex:1}
-  .who{font-size:13px;color:var(--muted)}
+  .who{font-size:14px;color:var(--muted);z-index:1}
   .who b{color:var(--txt)}
-  .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
-  .tabs{display:flex;gap:8px;margin:0 0 18px;flex-wrap:wrap}
+
+  .wrap{max-width:1140px;margin:0 auto;padding:22px 16px 70px}
+
+  /* tabs */
+  .tabs{display:flex;gap:8px;margin:0 0 20px;flex-wrap:wrap}
   .tab{background:var(--panel);border:1px solid var(--border);color:var(--muted);
-    padding:9px 16px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px}
-  .tab.active{color:#111;background:var(--accent);border-color:var(--accent)}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}
-  .card h2{margin:0 0 14px;font-size:16px;display:flex;align-items:center;gap:8px}
-  textarea{width:100%;min-height:150px;background:var(--bg);color:var(--txt);
-    border:1px solid var(--border);border-radius:10px;padding:12px;font-family:monospace;font-size:13px;resize:vertical}
-  input{width:100%;background:var(--bg);color:var(--txt);border:1px solid var(--border);
-    border-radius:8px;padding:10px;font-size:14px;margin-top:4px}
-  label{font-size:13px;color:var(--muted)}
-  button.btn{background:var(--accent);color:#111;border:none;border-radius:10px;
-    padding:11px 18px;font-weight:700;cursor:pointer;font-size:14px}
-  button.btn.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--border)}
-  button.btn.link{background:none;border:none;color:var(--accent2);cursor:pointer;font-size:13px;padding:0}
-  button.btn:disabled{opacity:.5;cursor:not-allowed}
+    padding:10px 17px;border-radius:12px;cursor:pointer;font-weight:700;font-size:14px;
+    transition:.15s;letter-spacing:.3px}
+  .tab:hover{color:var(--txt);border-color:#3a4275}
+  .tab.active{color:#160b04;border-color:transparent;
+    background:linear-gradient(135deg,var(--flame),var(--gold));
+    box-shadow:0 4px 18px rgba(255,122,24,.35)}
+
+  .card{background:linear-gradient(180deg,rgba(28,33,66,.55),rgba(20,24,48,.55));
+    border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;
+    backdrop-filter:blur(4px)}
+  .card h2{margin:0 0 14px;font-size:16px;display:flex;align-items:center;gap:9px;font-weight:700}
+  textarea{width:100%;min-height:150px;background:var(--bg2);color:var(--txt);
+    border:1px solid var(--border);border-radius:12px;padding:12px;font-family:monospace;font-size:13px;resize:vertical}
+  input,select{width:100%;background:var(--bg2);color:var(--txt);border:1px solid var(--border);
+    border-radius:10px;padding:11px;font-size:15px;font-family:var(--body);margin-top:4px}
+  label{font-size:13px;color:var(--muted);font-weight:600}
+  button.btn{background:linear-gradient(135deg,var(--flame),var(--ember));color:#fff;border:none;border-radius:12px;
+    padding:12px 20px;font-weight:700;cursor:pointer;font-size:14px;font-family:var(--body);letter-spacing:.4px;
+    box-shadow:0 4px 16px rgba(255,80,60,.28);transition:.15s}
+  button.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  button.btn.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--border);box-shadow:none}
+  button.btn.sm{padding:7px 12px;font-size:13px}
+  button.btn.danger{background:linear-gradient(135deg,#e33,#a11);box-shadow:none}
+  button.btn.link{background:none;border:none;color:var(--dragon);cursor:pointer;font-size:14px;padding:0;box-shadow:none;font-weight:700}
+  button.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
-  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px}
-  .stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-  .stat .v{font-size:22px;font-weight:800;margin-top:6px}
-  .stat .v.green{color:var(--green)} .stat .v.red{color:var(--red)} .stat .v.gold{color:var(--accent)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    padding:7px 13px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:600}
+  .chip.on{background:linear-gradient(135deg,var(--dragon),#2b6fff);color:#fff;border-color:transparent}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:15px;position:relative;overflow:hidden}
+  .stat::after{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:linear-gradient(var(--flame),var(--ember))}
+  .stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+  .stat .v{font-size:23px;font-weight:900;margin-top:6px;font-family:var(--head)}
+  .stat .v.green{color:var(--green)} .stat .v.red{color:var(--red)} .stat .v.gold{color:var(--gold)}
+
   .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  @media(max-width:720px){.charts{grid-template-columns:1fr}}
-  .chart-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;min-height:260px}
-  .chart-box h3{margin:0 0 10px;font-size:14px;color:var(--muted)}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
-  th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px}
+  @media(max-width:760px){.charts{grid-template-columns:1fr}}
+  .chart-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;min-height:270px}
+  .chart-box h3{margin:0 0 10px;font-size:14px;color:var(--muted);font-family:var(--body);font-weight:700}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.6px}
   td.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr:hover td{background:rgba(56,168,255,.05)}
   .badge{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--panel2);border:1px solid var(--border)}
-  .badge.rare{background:#3a2f00;color:var(--accent);border-color:#5a4a00}
-  .msg{padding:10px 14px;border-radius:10px;margin-top:12px;font-size:14px;display:none}
-  .msg.ok{background:#12331f;color:#7ee2a0;display:block}
-  .msg.err{background:#3a1614;color:#ff9c95;display:block}
-  .msg.info{background:#132033;color:#9cc4ff;display:block}
+  .badge.rare{background:#3a2f00;color:var(--gold);border-color:#5a4a00}
+  .badge.me{background:#0f2e4a;color:var(--dragon);border-color:#1e4e78}
+  .msg{padding:11px 14px;border-radius:12px;margin-top:12px;font-size:14px;display:none;font-weight:600}
+  .msg.ok{background:#0f2e22;color:#7ff0c0;display:block}
+  .msg.err{background:#3a1618;color:#ff9c9c;display:block}
+  .msg.info{background:#122238;color:#9cd0ff;display:block}
   .muted{color:var(--muted)}
   .hidden{display:none}
-  .pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:20px;background:var(--panel2);border:1px solid var(--border);color:var(--muted)}
-  .rank-1{color:var(--accent);font-weight:800}
-  .rank-2{color:#c9c9c9;font-weight:700}
-  .rank-3{color:#cd7f32;font-weight:700}
+  .rank-1{color:var(--gold);font-weight:900;font-family:var(--head)}
+  .rank-2{color:#cfd6ea;font-weight:800}
+  .rank-3{color:#e08a3c;font-weight:800}
   code{background:var(--panel2);padding:2px 6px;border-radius:5px;font-size:12px}
-  /* auth gate */
-  #authGate{position:fixed;inset:0;background:radial-gradient(circle at 50% 0%,#1b2130,#0e1016);
-    display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
-  #authGate.hidden{display:none}   /* precisa vencer o #authGate acima (especificidade) */
-  .auth-card{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--border);
-    border-radius:16px;padding:28px}
-  .auth-card h2{margin:0 0 4px;display:flex;align-items:center;gap:10px;font-size:20px}
-  .auth-card p.sub{margin:0 0 20px;color:var(--muted);font-size:13px}
-  .auth-card .field{margin-bottom:12px}
-  .auth-card button.btn{width:100%;margin-top:6px;padding:12px}
-  .switch{text-align:center;margin-top:16px;font-size:13px;color:var(--muted)}
+  .megastrip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .megatag{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+    border:1px dashed var(--border);border-radius:20px;padding:4px 11px;font-weight:700}
+
+  /* AUTH GATE */
+  #authGate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:
+      radial-gradient(700px 400px at 70% 10%, rgba(56,168,255,.18), transparent 60%),
+      radial-gradient(700px 400px at 20% 90%, rgba(255,122,24,.20), transparent 60%),
+      #08090f}
+  #authGate.hidden{display:none}
+  .auth-card{width:100%;max-width:400px;background:linear-gradient(180deg,#161a33,#10131f);
+    border:1px solid var(--border);border-radius:20px;padding:30px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,122,24,.08)}
+  .auth-card h2{margin:0 0 4px;display:flex;align-items:center;gap:12px;font-size:24px;font-weight:900}
+  .auth-card .gt{background:linear-gradient(90deg,#fff,var(--flame));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .auth-card p.sub{margin:0 0 22px;color:var(--muted);font-size:14px}
+  .auth-card .field{margin-bottom:13px}
+  .auth-card button.btn{width:100%;margin-top:8px;padding:13px}
+  .switch{text-align:center;margin-top:18px;font-size:14px;color:var(--muted)}
 </style>
 </head>
 <body>
 
-<!-- ================= LOGIN / CADASTRO ================= -->
+<!-- LOGIN -->
 <div id="authGate">
   <div class="auth-card">
-    <h2><span class="logo">⚡</span> Poke Loot</h2>
+    <h2><span class="logo">🔥</span> <span class="gt">Mega Loot</span></h2>
     <p class="sub" id="authSub">Entre com sua conta para continuar.</p>
-
     <div id="nameField" class="field hidden">
       <label>Apelido (aparece no ranking)</label>
       <input type="text" id="authName" placeholder="Ex: Killzone" />
@@ -102,41 +152,48 @@
       <label>Senha</label>
       <input type="password" id="authPass" placeholder="mínimo 6 caracteres" autocomplete="current-password" />
     </div>
-
     <button class="btn" id="authBtn">Entrar</button>
     <div class="msg" id="authMsg"></div>
     <div class="switch">
       <span id="switchTxt">Ainda não tem conta?</span>
       <button class="btn link" id="switchBtn">Criar conta</button>
     </div>
-    <div style="text-align:center;margin-top:14px;font-size:11px;color:#4a5163">v5 · sessão persistente</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v6 · MEGA EVOLUTION</div>
   </div>
 </div>
 
-<!-- ================= APP ================= -->
+<!-- APP -->
 <div id="app" class="hidden">
 <header>
-  <h1><span class="logo">⚡</span> Poke X Loot Analyzer</h1>
+  <div class="brand">
+    <span class="logo">🔥</span>
+    <div>
+      <div class="title">MEGA LOOT</div>
+      <div class="subtitle">Poke X · Loot Analyzer</div>
+    </div>
+  </div>
   <div class="spacer"></div>
-  <span class="who">Olá, <b id="whoName">—</b></span>
-  <button class="btn sec" id="logoutBtn">Sair</button>
+  <span class="who">Treinador: <b id="whoName">—</b></span>
+  <button class="btn sec sm" id="logoutBtn">Sair</button>
 </header>
 
 <div class="wrap">
   <div class="tabs">
     <div class="tab active" data-tab="import">📥 Importar</div>
     <div class="tab" data-tab="dashboard">📊 Dashboard</div>
+    <div class="tab" data-tab="evolution">📈 Evolução</div>
     <div class="tab" data-tab="ranking">🏆 Ranking</div>
+    <div class="tab" data-tab="mine">🗑️ Minhas sessões</div>
   </div>
 
   <!-- IMPORTAR -->
   <section id="tab-import">
     <div class="card">
       <h2>📥 Importar sessão do jogo</h2>
-      <p class="muted">Cole aqui o JSON que o analiser do Poke X gera. Ele é processado no seu navegador na hora.</p>
+      <p class="muted">Cole o JSON que o analiser do Poke X gera. É processado no seu navegador na hora.</p>
       <div class="row" style="margin-bottom:10px">
-        <button class="btn sec" id="sampleBtn">Usar exemplo</button>
-        <label class="btn sec" style="display:inline-block">📂 Abrir arquivo
+        <button class="btn sec sm" id="sampleBtn">Usar exemplo</button>
+        <label class="btn sec sm" style="display:inline-block">📂 Abrir arquivo
           <input type="file" id="fileInput" accept=".json,application/json" class="hidden" />
         </label>
       </div>
@@ -146,6 +203,12 @@
         <button class="btn sec" id="saveBtn" disabled>💾 Salvar no banco</button>
       </div>
       <div class="msg" id="importMsg"></div>
+      <div class="megastrip">
+        <span class="megatag">Mega Aerodactyl</span>
+        <span class="megatag">Mega Feraligatr</span>
+        <span class="megatag">Mega Charizard X · Y</span>
+        <span class="megatag">Mega Evolution</span>
+      </div>
     </div>
   </section>
 
@@ -174,13 +237,39 @@
     </div>
   </section>
 
+  <!-- EVOLUÇÃO -->
+  <section id="tab-evolution" class="hidden">
+    <div class="card">
+      <h2>📈 Evolução do profit/hora</h2>
+      <div class="row" style="margin-bottom:8px">
+        <div style="min-width:220px">
+          <label>Player</label>
+          <select id="evoPlayer"></select>
+        </div>
+        <button class="btn sec sm" id="refreshEvo" style="margin-top:20px">Atualizar</button>
+      </div>
+      <div class="chart-box" style="min-height:340px;margin-top:10px"><canvas id="chEvo"></canvas></div>
+      <div class="grid" id="evoStats" style="margin-top:14px"></div>
+      <div class="msg" id="evoMsg"></div>
+    </div>
+  </section>
+
   <!-- RANKING -->
   <section id="tab-ranking" class="hidden">
     <div class="card">
-      <h2>🏆 Ranking dos amigos</h2>
-      <div class="row" style="margin-bottom:12px">
-        <button class="btn sec" id="refreshRank">Atualizar</button>
-        <span class="pill" id="rankInfo">—</span>
+      <h2>🏆 Ranking dos treinadores</h2>
+      <div class="row" style="margin-bottom:6px;justify-content:space-between">
+        <div class="chips" id="periodChips">
+          <span class="chip on" data-p="all">Tudo</span>
+          <span class="chip" data-p="today">Hoje</span>
+          <span class="chip" data-p="7">7 dias</span>
+          <span class="chip" data-p="30">30 dias</span>
+        </div>
+        <div class="chips">
+          <span class="chip" id="mineChip" data-on="0">👤 Só as minhas</span>
+          <span class="chip" id="metricChip" data-m="profit_per_hour">Ordenar: Profit/h</span>
+          <button class="btn sec sm" id="refreshRank">Atualizar</button>
+        </div>
       </div>
       <table id="rankTable">
         <thead><tr><th>#</th><th>Player</th><th>Conta</th><th class="num">Profit/h</th><th class="num">Profit</th><th class="num">Kills</th><th class="num">Duração</th><th>Data</th></tr></thead>
@@ -189,294 +278,307 @@
       <div class="msg" id="rankMsg"></div>
     </div>
   </section>
+
+  <!-- MINHAS SESSÕES -->
+  <section id="tab-mine" class="hidden">
+    <div class="card">
+      <h2>🗑️ Minhas sessões</h2>
+      <p class="muted">Aqui ficam só as sessões que <b>você</b> salvou. Você pode apagar as que quiser.</p>
+      <div class="row" style="margin-bottom:6px"><button class="btn sec sm" id="refreshMine">Atualizar</button></div>
+      <table id="mineTable">
+        <thead><tr><th>Player</th><th class="num">Profit/h</th><th class="num">Profit</th><th class="num">Kills</th><th class="num">Duração</th><th>Data</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="msg" id="mineMsg"></div>
+    </div>
+  </section>
 </div>
 </div>
 
 <script>
-// ============ CONFIG EMBUTIDA (segura: chave publica + RLS) ============
+// ===== CONFIG EMBUTIDA (chave publica + RLS) =====
 const SUPABASE_URL = 'https://krridpfliuvfxfwsmipd.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yesd0vKJ2z3lKDLlkYXOcg_MNxui2qJ';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    persistSession: true,        // mantem a sessao salva no navegador
-    autoRefreshToken: true,      // renova o token sozinho
-    storage: window.localStorage,
-    storageKey: 'pkx-auth',
-    detectSessionInUrl: false
-  }
+  auth:{ persistSession:true, autoRefreshToken:true, storage:window.localStorage, storageKey:'pkx-auth', detectSessionInUrl:false }
 });
 
-// ---------- utils ----------
 const $ = s => document.querySelector(s);
 const fmt = n => (n==null||isNaN(n)) ? '0' : Number(n).toLocaleString('pt-BR');
 const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
-const PAL = ['#ffcb05','#3b6fd4','#3fbf6b','#9b6dff','#e0524b','#43c6d8','#f08a3c','#d84fa0','#7ec24b','#a0a4b0'];
+const PAL = ['#ff7a18','#38a8ff','#38d39f','#ffcf3f','#ff3860','#9b6dff','#43c6d8','#f08a3c','#d84fa0','#7ec24b'];
+const hhmmss = s => s ? new Date(s*1000).toISOString().substr(11,8) : '—';
 let charts = {};
-let currentData = null;
-let currentSummary = null;
-let currentUser = null;
+let currentData=null, currentSummary=null, currentUser=null;
+let allSessions=[];
 function showMsg(sel,kind,txt){ const m=$(sel); m.className='msg '+kind; m.textContent=txt; }
 
-// ---------- AUTH ----------
-let authMode = 'login'; // 'login' | 'signup'
+// ===== AUTH =====
+let authMode='login';
 function renderAuthMode(){
-  const signup = authMode==='signup';
-  $('#authSub').textContent = signup ? 'Crie sua conta para participar.' : 'Entre com sua conta para continuar.';
-  $('#nameField').classList.toggle('hidden', !signup);
-  $('#authBtn').textContent = signup ? 'Criar conta' : 'Entrar';
-  $('#switchTxt').textContent = signup ? 'Já tem conta?' : 'Ainda não tem conta?';
-  $('#switchBtn').textContent = signup ? 'Fazer login' : 'Criar conta';
+  const s=authMode==='signup';
+  $('#authSub').textContent = s?'Crie sua conta para participar.':'Entre com sua conta para continuar.';
+  $('#nameField').classList.toggle('hidden', !s);
+  $('#authBtn').textContent = s?'Criar conta':'Entrar';
+  $('#switchTxt').textContent = s?'Já tem conta?':'Ainda não tem conta?';
+  $('#switchBtn').textContent = s?'Fazer login':'Criar conta';
   $('#authMsg').style.display='none';
 }
-$('#switchBtn').onclick = ()=>{ authMode = authMode==='login'?'signup':'login'; renderAuthMode(); };
-
-$('#authBtn').onclick = async ()=>{
-  const email = $('#authEmail').value.trim();
-  const pass  = $('#authPass').value;
-  const name  = $('#authName').value.trim();
-  if(!email || !pass){ return showMsg('#authMsg','err','Preencha email e senha.'); }
-  if(authMode==='signup' && !name){ return showMsg('#authMsg','err','Escolha um apelido.'); }
-  $('#authBtn').disabled = true;
+$('#switchBtn').onclick=()=>{ authMode=authMode==='login'?'signup':'login'; renderAuthMode(); };
+$('#authBtn').onclick=async()=>{
+  const email=$('#authEmail').value.trim(), pass=$('#authPass').value, name=$('#authName').value.trim();
+  if(!email||!pass) return showMsg('#authMsg','err','Preencha email e senha.');
+  if(authMode==='signup'&&!name) return showMsg('#authMsg','err','Escolha um apelido.');
+  $('#authBtn').disabled=true;
   try{
     if(authMode==='signup'){
-      const { data, error } = await sb.auth.signUp({
-        email, password: pass, options:{ data:{ display_name: name } }
-      });
+      const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{display_name:name}}});
       if(error) throw error;
-      if(data.session){
-        onSession(data.session);                 // entra direto no app
-      }else{
-        // confirmacao off mas sem sessao: tenta logar automaticamente
-        const { data: d2, error: e2 } = await sb.auth.signInWithPassword({ email, password: pass });
-        if(e2){
-          showMsg('#authMsg','info','Conta criada! Agora clique em "Fazer login".');
-          authMode='login'; setTimeout(renderAuthMode, 2500);
-        }else{
-          onSession(d2.session);
-        }
+      if(data.session){ onSession(data.session); }
+      else{
+        const {data:d2,error:e2}=await sb.auth.signInWithPassword({email,password:pass});
+        if(e2){ showMsg('#authMsg','info','Conta criada! Agora clique em "Fazer login".'); authMode='login'; setTimeout(renderAuthMode,2000);}
+        else onSession(d2.session);
       }
     }else{
-      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
       if(error) throw error;
-      onSession(data.session);                    // entra direto no app
+      onSession(data.session);
     }
-  }catch(e){
-    const raw = e.message || e.error_description || JSON.stringify(e);
-    showMsg('#authMsg','err', traduzErro(raw));
-  }finally{
-    $('#authBtn').disabled = false;
-  }
+  }catch(e){ showMsg('#authMsg','err',traduzErro(e.message||JSON.stringify(e))); }
+  finally{ $('#authBtn').disabled=false; }
 };
 function traduzErro(m){
   if(/invalid login/i.test(m)) return 'Email ou senha incorretos.';
   if(/already registered|already been registered|user_already_exists/i.test(m)) return 'Esse email já tem conta. Clique em "Fazer login".';
-  if(/weak.?password|password.*(requirement|character)/i.test(m)) return 'Senha fraca. Use pelo menos 6 caracteres (se pedir, misture letra, número e símbolo).';
+  if(/weak.?password|password.*(requirement|character)/i.test(m)) return 'Senha fraca. Use pelo menos 6 caracteres.';
   if(/at least 6|should be at least/i.test(m)) return 'A senha precisa ter no mínimo 6 caracteres.';
   if(/invalid.*email|email.*invalid/i.test(m)) return 'Email inválido. Confira se digitou certo.';
-  if(/signups?.*(disabled|not allowed)/i.test(m)) return 'Cadastro desativado no momento. Avise o admin.';
-  if(/confirm/i.test(m)) return 'Confirme seu email antes de entrar (veja sua caixa de entrada).';
-  if(/rate limit|too many/i.test(m)) return 'Muitas tentativas. Espere um pouquinho e tente de novo.';
+  if(/signups?.*(disabled|not allowed)/i.test(m)) return 'Cadastro desativado no momento.';
+  if(/rate limit|too many/i.test(m)) return 'Muitas tentativas. Espere um pouco.';
   return m;
 }
-$('#logoutBtn').onclick = async ()=>{ await sb.auth.signOut(); };
-
-function nameOf(user){
-  return (user?.user_metadata?.display_name) || (user?.email||'').split('@')[0] || 'jogador';
-}
+$('#logoutBtn').onclick=async()=>{ await sb.auth.signOut(); onSession(null); };
+const nameOf = u => (u?.user_metadata?.display_name)||(u?.email||'').split('@')[0]||'treinador';
 function onSession(session){
   currentUser = session?.user || null;
   if(currentUser){
-    $('#authGate').classList.add('hidden');
-    $('#app').classList.remove('hidden');
-    $('#whoName').textContent = nameOf(currentUser);
-    updateSaveBtn();
+    $('#authGate').classList.add('hidden'); $('#app').classList.remove('hidden');
+    $('#whoName').textContent = nameOf(currentUser); updateSaveBtn();
   }else{
-    $('#app').classList.add('hidden');
-    $('#authGate').classList.remove('hidden');
+    $('#app').classList.add('hidden'); $('#authGate').classList.remove('hidden');
     $('#authEmail').value=''; $('#authPass').value=''; $('#authName').value='';
   }
 }
-sb.auth.onAuthStateChange((_e, session)=> onSession(session));
-sb.auth.getSession().then(({data})=> onSession(data.session));
+sb.auth.onAuthStateChange((_e,s)=>onSession(s));
+sb.auth.getSession().then(({data})=>onSession(data.session));
 
-// ---------- tabs ----------
+// ===== TABS =====
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   t.classList.add('active');
-  ['import','dashboard','ranking'].forEach(n=>$('#tab-'+n).classList.add('hidden'));
+  ['import','dashboard','evolution','ranking','mine'].forEach(n=>$('#tab-'+n).classList.add('hidden'));
   $('#tab-'+t.dataset.tab).classList.remove('hidden');
   if(t.dataset.tab==='ranking') loadRanking();
+  if(t.dataset.tab==='evolution') loadEvolution();
+  if(t.dataset.tab==='mine') loadMine();
 });
 
-// ---------- parse ----------
+// ===== PARSE + DASHBOARD =====
 function parseSession(data){
-  const S = data.Session || {};
+  const S=data.Session||{};
   return {
-    game_session_id: S['Session ID'] ?? null,
-    player: S.Player || (data['Enemies Defeated']?.[0]?.Player) || 'Desconhecido',
-    session_type: S['Session type'] ?? null,
-    start_time: S.Start ? S.Start.replace(' ','T') : null,
-    duration_seconds: S['Duration seconds'] ?? null,
-    duration_label: S.Duration ?? null,
-    profit: S.Profit ?? null,
-    profit_per_hour: S['Profit per hour'] ?? null,
-    raw_gains: S['Raw gains'] ?? null,
-    supplies_cost: S.Supplies ?? null,
-    kills: S.Kills ?? null,
-    rare_kills: S['Rare kills'] ?? null,
-    kills_per_hour: S['Kills per hour'] ?? null,
-    damage_dealt: S['Damage dealt'] ?? null,
-    damage_taken: S['Damage taken'] ?? null,
+    game_session_id:S['Session ID']??null,
+    player:S.Player||(data['Enemies Defeated']?.[0]?.Player)||'Desconhecido',
+    session_type:S['Session type']??null,
+    start_time:S.Start?S.Start.replace(' ','T'):null,
+    duration_seconds:S['Duration seconds']??null, duration_label:S.Duration??null,
+    profit:S.Profit??null, profit_per_hour:S['Profit per hour']??null,
+    raw_gains:S['Raw gains']??null, supplies_cost:S.Supplies??null,
+    kills:S.Kills??null, rare_kills:S['Rare kills']??null, kills_per_hour:S['Kills per hour']??null,
+    damage_dealt:S['Damage dealt']??null, damage_taken:S['Damage taken']??null,
   };
 }
-function updateSaveBtn(){ $('#saveBtn').disabled = !(currentUser && currentData); }
-
-function renderDashboard(data, summary){
-  $('#dashEmpty').classList.add('hidden');
-  $('#dashContent').classList.remove('hidden');
-  $('#dashTitle').textContent = `Sessão de ${summary.player}` + (summary.game_session_id?` · #${summary.game_session_id}`:'');
-  const stats = [
-    ['Profit', fmt(summary.profit), summary.profit>=0?'green':'red'],
-    ['Profit / hora', fmt(summary.profit_per_hour), summary.profit_per_hour>=0?'green':'red'],
-    ['Ganhos brutos', fmt(summary.raw_gains), 'gold'],
-    ['Supplies', fmt(summary.supplies_cost), 'red'],
-    ['Kills', fmt(summary.kills), ''],
-    ['Kills raras', fmt(summary.rare_kills), 'gold'],
-    ['Kills / hora', fmt(summary.kills_per_hour), ''],
-    ['Duração', summary.duration_label || (summary.duration_seconds+'s'), ''],
-    ['Dano causado', fmt(summary.damage_dealt), 'green'],
-    ['Dano recebido', fmt(summary.damage_taken), 'red'],
+function updateSaveBtn(){ $('#saveBtn').disabled=!(currentUser&&currentData); }
+function renderDashboard(data,summary){
+  $('#dashEmpty').classList.add('hidden'); $('#dashContent').classList.remove('hidden');
+  $('#dashTitle').textContent=`Sessão de ${summary.player}`+(summary.game_session_id?` · #${summary.game_session_id}`:'');
+  const stats=[
+    ['Profit',fmt(summary.profit),summary.profit>=0?'green':'red'],
+    ['Profit / hora',fmt(summary.profit_per_hour),summary.profit_per_hour>=0?'green':'red'],
+    ['Ganhos brutos',fmt(summary.raw_gains),'gold'],
+    ['Supplies',fmt(summary.supplies_cost),'red'],
+    ['Kills',fmt(summary.kills),''],
+    ['Kills raras',fmt(summary.rare_kills),'gold'],
+    ['Kills / hora',fmt(summary.kills_per_hour),''],
+    ['Duração',summary.duration_label||(summary.duration_seconds+'s'),''],
+    ['Dano causado',fmt(summary.damage_dealt),'green'],
+    ['Dano recebido',fmt(summary.damage_taken),'red'],
   ];
-  const g = $('#statGrid'); g.innerHTML='';
-  stats.forEach(([k,v,c])=>{
-    g.appendChild(el('div','stat',`<div class="k">${k}</div><div class="v ${c}">${v}</div>`));
-  });
-  const drops = (data.Drops||[]).slice().sort((a,b)=>(b['Total price']||0)-(a['Total price']||0));
-  drawPie('chDrops', drops.filter(d=>d['Total price']>0).slice(0,8).map(d=>d.Item.trim()),
+  const g=$('#statGrid'); g.innerHTML='';
+  stats.forEach(([k,v,c])=>g.appendChild(el('div','stat',`<div class="k">${k}</div><div class="v ${c}">${v}</div>`)));
+  const drops=(data.Drops||[]).slice().sort((a,b)=>(b['Total price']||0)-(a['Total price']||0));
+  drawPie('chDrops',drops.filter(d=>d['Total price']>0).slice(0,8).map(d=>d.Item.trim()),
           drops.filter(d=>d['Total price']>0).slice(0,8).map(d=>d['Total price']));
-  fillTable('#dropsTable', drops);
-  fillTable('#suppliesTable', (data.Supplies||[]).slice().sort((a,b)=>(b['Total price']||0)-(a['Total price']||0)));
-  const byEl = {};
-  (data.Damage||[]).forEach(d=>{ byEl[d.Element]=(byEl[d.Element]||0)+(d['Damage dealt']||0); });
-  const elEntries = Object.entries(byEl).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  drawBar('chDmgEl', elEntries.map(e=>e[0]), elEntries.map(e=>e[1]), 'Dano');
-  const en = (data['Enemies Defeated']||[]).slice().sort((a,b)=>(b.Count||0)-(a.Count||0)).slice(0,10);
-  drawBar('chEnemies', en.map(e=>e.Enemy), en.map(e=>e.Count), 'Kills', true);
-  const foe = {};
-  (data.Damage||[]).forEach(d=>{
-    foe[d.Enemy]=foe[d.Enemy]||{dealt:0,taken:0};
-    foe[d.Enemy].dealt+=(d['Damage dealt']||0); foe[d.Enemy].taken+=(d['Damage taken']||0);
-  });
-  const foeTop = Object.entries(foe).sort((a,b)=>b[1].dealt-a[1].dealt).slice(0,8);
-  drawGrouped('chDmgFoe', foeTop.map(f=>f[0]), foeTop.map(f=>f[1].dealt), foeTop.map(f=>f[1].taken));
+  fillTable('#dropsTable',drops);
+  fillTable('#suppliesTable',(data.Supplies||[]).slice().sort((a,b)=>(b['Total price']||0)-(a['Total price']||0)));
+  const byEl={}; (data.Damage||[]).forEach(d=>byEl[d.Element]=(byEl[d.Element]||0)+(d['Damage dealt']||0));
+  const ee=Object.entries(byEl).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  drawBar('chDmgEl',ee.map(e=>e[0]),ee.map(e=>e[1]),'Dano');
+  const en=(data['Enemies Defeated']||[]).slice().sort((a,b)=>(b.Count||0)-(a.Count||0)).slice(0,10);
+  drawBar('chEnemies',en.map(e=>e.Enemy),en.map(e=>e.Count),'Kills',true);
+  const foe={}; (data.Damage||[]).forEach(d=>{foe[d.Enemy]=foe[d.Enemy]||{dealt:0,taken:0};foe[d.Enemy].dealt+=(d['Damage dealt']||0);foe[d.Enemy].taken+=(d['Damage taken']||0);});
+  const ft=Object.entries(foe).sort((a,b)=>b[1].dealt-a[1].dealt).slice(0,8);
+  drawGrouped('chDmgFoe',ft.map(f=>f[0]),ft.map(f=>f[1].dealt),ft.map(f=>f[1].taken));
 }
-
-function fillTable(sel, arr){
-  const tb = $(sel+' tbody'); tb.innerHTML='';
+function fillTable(sel,arr){
+  const tb=$(sel+' tbody'); tb.innerHTML='';
   if(!arr.length){ tb.appendChild(el('tr',null,'<td colspan="4" class="muted">Nenhum item</td>')); return; }
   arr.forEach(it=>{
-    const rare = it.Rare ? ' <span class="badge rare">raro</span>' : '';
-    tb.appendChild(el('tr',null,
-      `<td>${(it.Item||'').trim()}${rare}</td>
-       <td class="num">${fmt(it.Count)}</td>
-       <td class="num">${fmt(it['Unit price'])}</td>
-       <td class="num">${fmt(it['Total price'])}</td>`));
+    const rare=it.Rare?' <span class="badge rare">raro</span>':'';
+    tb.appendChild(el('tr',null,`<td>${(it.Item||'').trim()}${rare}</td><td class="num">${fmt(it.Count)}</td><td class="num">${fmt(it['Unit price'])}</td><td class="num">${fmt(it['Total price'])}</td>`));
   });
 }
 
-// ---------- charts ----------
-function destroy(id){ if(charts[id]){charts[id].destroy(); delete charts[id];} }
-const gridColor='#2a2f3e', tickColor='#8b93a7';
-function drawPie(id,labels,values){
-  destroy(id);
-  charts[id]=new Chart($('#'+id),{type:'doughnut',
-    data:{labels,datasets:[{data:values,backgroundColor:PAL,borderColor:'#171a24',borderWidth:2}]},
-    options:{plugins:{legend:{labels:{color:tickColor,font:{size:11}},position:'right'}}}});
-}
-function drawBar(id,labels,values,label,gold){
-  destroy(id);
-  charts[id]=new Chart($('#'+id),{type:'bar',
-    data:{labels,datasets:[{label,data:values,backgroundColor:gold?'#ffcb05':'#3b6fd4',borderRadius:5}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},
-      scales:{x:{ticks:{color:tickColor},grid:{color:gridColor}},y:{ticks:{color:tickColor},grid:{display:false}}}}});
-}
-function drawGrouped(id,labels,dealt,taken){
-  destroy(id);
-  charts[id]=new Chart($('#'+id),{type:'bar',
-    data:{labels,datasets:[
-      {label:'Causado',data:dealt,backgroundColor:'#3fbf6b',borderRadius:4},
-      {label:'Recebido',data:taken,backgroundColor:'#e0524b',borderRadius:4}]},
-    options:{plugins:{legend:{labels:{color:tickColor}}},
-      scales:{x:{ticks:{color:tickColor,font:{size:10}},grid:{display:false}},
-              y:{ticks:{color:tickColor},grid:{color:gridColor}}}}});
-}
+// ===== CHARTS =====
+function destroy(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+const gridColor='#2b3160', tickColor='#9aa3c7';
+function drawPie(id,labels,values){ destroy(id);
+  charts[id]=new Chart($('#'+id),{type:'doughnut',data:{labels,datasets:[{data:values,backgroundColor:PAL,borderColor:'#141830',borderWidth:2}]},
+    options:{plugins:{legend:{labels:{color:tickColor,font:{size:11}},position:'right'}}}});}
+function drawBar(id,labels,values,label,flame){ destroy(id);
+  charts[id]=new Chart($('#'+id),{type:'bar',data:{labels,datasets:[{label,data:values,backgroundColor:flame?'#ff7a18':'#38a8ff',borderRadius:5}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:tickColor},grid:{color:gridColor}},y:{ticks:{color:tickColor},grid:{display:false}}}}});}
+function drawGrouped(id,labels,dealt,taken){ destroy(id);
+  charts[id]=new Chart($('#'+id),{type:'bar',data:{labels,datasets:[{label:'Causado',data:dealt,backgroundColor:'#38d39f',borderRadius:4},{label:'Recebido',data:taken,backgroundColor:'#ff5a5a',borderRadius:4}]},
+    options:{plugins:{legend:{labels:{color:tickColor}}},scales:{x:{ticks:{color:tickColor,font:{size:10}},grid:{display:false}},y:{ticks:{color:tickColor},grid:{color:gridColor}}}}});}
 
-// ---------- import actions ----------
-$('#parseBtn').onclick = ()=>{
-  const raw = $('#jsonInput').value.trim();
-  if(!raw){ return showMsg('#importMsg','err','Cole o JSON primeiro.'); }
-  let data;
-  try{ data = JSON.parse(raw); }
-  catch(e){ return showMsg('#importMsg','err','JSON inválido: '+e.message); }
-  if(!data.Session){ return showMsg('#importMsg','info','Aviso: não achei a chave "Session" — pode faltar dados.'); }
-  currentData = data;
-  currentSummary = parseSession(data);
-  renderDashboard(data, currentSummary);
-  updateSaveBtn();
-  showMsg('#importMsg','ok','Analisado! Veja a aba Dashboard, e clique em Salvar no banco para entrar no ranking.');
+// ===== IMPORT ACTIONS =====
+$('#parseBtn').onclick=()=>{
+  const raw=$('#jsonInput').value.trim();
+  if(!raw) return showMsg('#importMsg','err','Cole o JSON primeiro.');
+  let data; try{ data=JSON.parse(raw); }catch(e){ return showMsg('#importMsg','err','JSON inválido: '+e.message); }
+  if(!data.Session) return showMsg('#importMsg','info','Aviso: não achei a chave "Session".');
+  currentData=data; currentSummary=parseSession(data);
+  renderDashboard(data,currentSummary); updateSaveBtn();
+  showMsg('#importMsg','ok','Analisado! Veja o Dashboard e clique em Salvar no banco para entrar no ranking.');
   document.querySelector('.tab[data-tab="dashboard"]').click();
 };
-
-$('#saveBtn').onclick = async ()=>{
-  if(!currentUser || !currentSummary) return;
+$('#saveBtn').onclick=async()=>{
+  if(!currentUser||!currentSummary) return;
   $('#saveBtn').disabled=true;
-  const row = {...currentSummary};
-  delete row.duration_label;
-  row.raw_json = currentData;
-  row.user_id = currentUser.id;
-  row.user_email = currentUser.email;
-  row.uploaded_by = nameOf(currentUser);
-  const { error } = await sb.from('sessions').insert(row);
+  const row={...currentSummary}; delete row.duration_label;
+  row.raw_json=currentData; row.user_id=currentUser.id; row.user_email=currentUser.email; row.uploaded_by=nameOf(currentUser);
+  const {error}=await sb.from('sessions').insert(row);
   $('#saveBtn').disabled=false;
   if(error){
-    if((error.code==='23505')||/duplicate/i.test(error.message))
-      showMsg('#importMsg','info','Essa sessão já estava salva no banco.');
+    if(error.code==='23505'||/duplicate/i.test(error.message)) showMsg('#importMsg','info','Essa sessão já estava salva.');
     else showMsg('#importMsg','err','Erro ao salvar: '+error.message);
-  }else{
-    showMsg('#importMsg','ok','Salvo no banco! Veja no Ranking. 🏆');
-  }
+  }else showMsg('#importMsg','ok','Salvo no banco! Veja no Ranking. 🏆');
 };
+$('#sampleBtn').onclick=()=>{ $('#jsonInput').value=JSON.stringify(SAMPLE,null,2); };
+$('#fileInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('#jsonInput').value=r.result;};r.readAsText(f);};
 
-$('#sampleBtn').onclick = ()=>{ $('#jsonInput').value = JSON.stringify(SAMPLE,null,2); };
-$('#fileInput').onchange = e=>{
-  const f=e.target.files[0]; if(!f)return;
-  const r=new FileReader(); r.onload=()=>{$('#jsonInput').value=r.result;}; r.readAsText(f);
-};
+// ===== DATA (compartilhado por ranking/evolucao/minhas) =====
+async function refreshData(){
+  const {data,error}=await sb.from('sessions')
+    .select('id,player,uploaded_by,user_id,profit_per_hour,profit,kills,duration_seconds,created_at,start_time')
+    .order('created_at',{ascending:false}).limit(500);
+  if(error){ allSessions=[]; return error; }
+  allSessions=data||[]; return null;
+}
+function whenOf(r){ return r.start_time || r.created_at; }
+function inPeriod(r,p){
+  if(p==='all') return true;
+  const t=new Date(whenOf(r)).getTime(); const now=Date.now();
+  if(p==='today'){ const d=new Date(); d.setHours(0,0,0,0); return t>=d.getTime(); }
+  const days=Number(p); return t >= now - days*86400000;
+}
 
-// ---------- ranking ----------
-$('#refreshRank').onclick = loadRanking;
-async function loadRanking(){
-  showMsg('#rankMsg','info','Carregando...');
-  const { data, error } = await sb.from('sessions')
-    .select('player,uploaded_by,profit_per_hour,profit,kills,duration_seconds,created_at')
-    .order('profit_per_hour',{ascending:false}).limit(50);
+// ===== RANKING =====
+let rankPeriod='all', rankMine=false, rankMetric='profit_per_hour';
+$('#periodChips').onclick=e=>{ if(!e.target.dataset.p)return;
+  document.querySelectorAll('#periodChips .chip').forEach(c=>c.classList.remove('on'));
+  e.target.classList.add('on'); rankPeriod=e.target.dataset.p; renderRanking(); };
+$('#mineChip').onclick=e=>{ rankMine=!rankMine; e.target.classList.toggle('on',rankMine); renderRanking(); };
+$('#metricChip').onclick=e=>{ rankMetric=rankMetric==='profit_per_hour'?'profit':'profit_per_hour';
+  e.target.textContent='Ordenar: '+(rankMetric==='profit_per_hour'?'Profit/h':'Profit total'); renderRanking(); };
+$('#refreshRank').onclick=loadRanking;
+async function loadRanking(){ showMsg('#rankMsg','info','Carregando...'); const err=await refreshData();
+  if(err) return showMsg('#rankMsg','err','Erro: '+err.message); renderRanking(); }
+function renderRanking(){
+  let rows=allSessions.filter(r=>inPeriod(r,rankPeriod));
+  if(rankMine&&currentUser) rows=rows.filter(r=>r.user_id===currentUser.id);
+  rows=rows.slice().sort((a,b)=>(b[rankMetric]||0)-(a[rankMetric]||0));
   const tb=$('#rankTable tbody'); tb.innerHTML='';
-  if(error){ return showMsg('#rankMsg','err','Erro: '+error.message); }
-  if(!data.length){ $('#rankInfo').textContent='0 sessões'; return showMsg('#rankMsg','info','Nenhuma sessão salva ainda.'); }
-  $('#rankInfo').textContent = data.length+' sessões';
+  if(!rows.length){ $('#rankMsg').style.display='none'; tb.appendChild(el('tr',null,'<td colspan="8" class="muted">Nenhuma sessão neste filtro.</td>')); return; }
   $('#rankMsg').style.display='none';
-  data.forEach((r,i)=>{
-    const rank = i<3 ? `<span class="rank-${i+1}">${i+1}º</span>` : (i+1);
-    const dur = r.duration_seconds ? new Date(r.duration_seconds*1000).toISOString().substr(11,8) : '—';
-    const date = r.created_at ? new Date(r.created_at).toLocaleDateString('pt-BR') : '—';
-    tb.appendChild(el('tr',null,
-      `<td>${rank}</td><td><b>${r.player}</b></td><td class="muted">${r.uploaded_by||'—'}</td>
-       <td class="num">${fmt(r.profit_per_hour)}</td><td class="num">${fmt(r.profit)}</td>
-       <td class="num">${fmt(r.kills)}</td><td class="num">${dur}</td><td>${date}</td>`));
+  rows.forEach((r,i)=>{
+    const rank=i<3?`<span class="rank-${i+1}">${i+1}º</span>`:(i+1);
+    const mine=currentUser&&r.user_id===currentUser.id?' <span class="badge me">você</span>':'';
+    const date=whenOf(r)?new Date(whenOf(r)).toLocaleDateString('pt-BR'):'—';
+    tb.appendChild(el('tr',null,`<td>${rank}</td><td><b>${r.player}</b>${mine}</td><td class="muted">${r.uploaded_by||'—'}</td><td class="num">${fmt(r.profit_per_hour)}</td><td class="num">${fmt(r.profit)}</td><td class="num">${fmt(r.kills)}</td><td class="num">${hhmmss(r.duration_seconds)}</td><td>${date}</td>`));
   });
 }
 
-// ---------- exemplo ----------
+// ===== EVOLUÇÃO =====
+$('#refreshEvo').onclick=loadEvolution;
+$('#evoPlayer').onchange=renderEvolution;
+async function loadEvolution(){ showMsg('#evoMsg','info','Carregando...'); const err=await refreshData();
+  if(err) return showMsg('#evoMsg','err','Erro: '+err.message);
+  const players=[...new Set(allSessions.map(r=>r.player))].sort();
+  const cur=$('#evoPlayer').value;
+  $('#evoPlayer').innerHTML=players.map(p=>`<option${p===cur?' selected':''}>${p}</option>`).join('');
+  $('#evoMsg').style.display='none'; renderEvolution(); }
+function renderEvolution(){
+  const player=$('#evoPlayer').value;
+  const rows=allSessions.filter(r=>r.player===player)
+    .slice().sort((a,b)=>new Date(whenOf(a))-new Date(whenOf(b)));
+  destroy('chEvo');
+  if(!rows.length){ $('#evoStats').innerHTML=''; return showMsg('#evoMsg','info','Sem sessões para este player.'); }
+  $('#evoMsg').style.display='none';
+  const labels=rows.map(r=>new Date(whenOf(r)).toLocaleDateString('pt-BR')+' '+new Date(whenOf(r)).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+  const gctx=$('#chEvo').getContext('2d');
+  const grad=gctx.createLinearGradient(0,0,0,320); grad.addColorStop(0,'rgba(255,122,24,.45)'); grad.addColorStop(1,'rgba(255,122,24,0)');
+  charts['chEvo']=new Chart($('#chEvo'),{type:'line',
+    data:{labels,datasets:[{label:'Profit / hora',data:rows.map(r=>r.profit_per_hour||0),borderColor:'#ff7a18',backgroundColor:grad,fill:true,tension:.3,pointBackgroundColor:'#ffcf3f',pointRadius:4}]},
+    options:{plugins:{legend:{labels:{color:tickColor}}},scales:{x:{ticks:{color:tickColor,maxRotation:60,minRotation:30,font:{size:10}},grid:{color:gridColor}},y:{ticks:{color:tickColor},grid:{color:gridColor}}}}});
+  const phs=rows.map(r=>r.profit_per_hour||0);
+  const best=Math.max(...phs), avg=Math.round(phs.reduce((a,b)=>a+b,0)/phs.length), totalProfit=rows.reduce((a,b)=>a+(b.profit||0),0);
+  $('#evoStats').innerHTML=[
+    ['Sessões',fmt(rows.length),''],
+    ['Melhor profit/h',fmt(best),'gold'],
+    ['Média profit/h',fmt(avg),''],
+    ['Profit acumulado',fmt(totalProfit),'green'],
+  ].map(([k,v,c])=>`<div class="stat"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+}
+
+// ===== MINHAS SESSÕES =====
+$('#refreshMine').onclick=loadMine;
+async function loadMine(){ showMsg('#mineMsg','info','Carregando...'); const err=await refreshData();
+  if(err) return showMsg('#mineMsg','err','Erro: '+err.message); renderMine(); }
+function renderMine(){
+  const rows=allSessions.filter(r=>currentUser&&r.user_id===currentUser.id);
+  const tb=$('#mineTable tbody'); tb.innerHTML='';
+  if(!rows.length){ $('#mineMsg').style.display='none'; tb.appendChild(el('tr',null,'<td colspan="7" class="muted">Você ainda não salvou nenhuma sessão.</td>')); return; }
+  $('#mineMsg').style.display='none';
+  rows.forEach(r=>{
+    const date=whenOf(r)?new Date(whenOf(r)).toLocaleDateString('pt-BR'):'—';
+    const tr=el('tr',null,`<td><b>${r.player}</b></td><td class="num">${fmt(r.profit_per_hour)}</td><td class="num">${fmt(r.profit)}</td><td class="num">${fmt(r.kills)}</td><td class="num">${hhmmss(r.duration_seconds)}</td><td>${date}</td>`);
+    const tdBtn=el('td','num'); const b=el('button','btn danger sm','Apagar'); b.onclick=()=>delSession(r.id,b); tdBtn.appendChild(b); tr.appendChild(tdBtn);
+    tb.appendChild(tr);
+  });
+}
+async function delSession(id,btn){
+  if(!confirm('Apagar esta sessão? Isso não tem volta.')) return;
+  btn.disabled=true; btn.textContent='Apagando...';
+  const {error}=await sb.from('sessions').delete().eq('id',id);
+  if(error){ btn.disabled=false; btn.textContent='Apagar'; return showMsg('#mineMsg','err','Erro ao apagar: '+error.message); }
+  allSessions=allSessions.filter(r=>r.id!==id); renderMine();
+  showMsg('#mineMsg','ok','Sessão apagada.');
+}
+
+// ===== EXEMPLO =====
 const SAMPLE = {"Enemies Defeated":[{"Enemy":"Aerodactyl","Rare":true,"Count":2,"Player":"Killzone"},{"Enemy":"Machamp","Rare":false,"Count":9,"Player":"Killzone"},{"Enemy":"Bastiodon","Rare":false,"Count":6,"Player":"Killzone"},{"Enemy":"Pinsir","Rare":false,"Count":6,"Player":"Killzone"},{"Enemy":"Rhydon","Rare":false,"Count":6,"Player":"Killzone"},{"Enemy":"Kabutops","Rare":false,"Count":5,"Player":"Killzone"},{"Enemy":"Armaldo","Rare":false,"Count":4,"Player":"Killzone"},{"Enemy":"Hitmontop","Rare":false,"Count":4,"Player":"Killzone"},{"Enemy":"Omastar","Rare":false,"Count":3,"Player":"Killzone"}],
 "Supplies":[{"Item":"Max Revive","Total price":9100,"Count":26,"Unit price":350},{"Item":"Empty Old Ball","Total price":8500,"Count":17,"Unit price":500},{"Item":"Medicine","Total price":100,"Count":50,"Unit price":2}],
 "Damage":[{"Enemy":"Bastiodon","Damage taken":28081,"Element":"Rock","Damage dealt":0},{"Enemy":"Bastiodon","Damage taken":0,"Element":"Water","Damage dealt":538980},{"Enemy":"Armaldo","Damage taken":0,"Element":"Water","Damage dealt":394480},{"Enemy":"Kabutops","Damage taken":0,"Element":"Water","Damage dealt":306807},{"Enemy":"Omastar","Damage taken":0,"Element":"Water","Damage dealt":260088},{"Enemy":"Aerodactyl","Damage taken":0,"Element":"Water","Damage dealt":212400},{"Enemy":"Walrein","Damage taken":0,"Element":"Psychic","Damage dealt":121649},{"Enemy":"Machamp","Damage taken":0,"Element":"Fairy","Damage dealt":70016},{"Enemy":"Rhydon","Damage taken":0,"Element":"Rock","Damage dealt":87358}],
