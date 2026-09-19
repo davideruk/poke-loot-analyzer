@@ -250,9 +250,13 @@ $('#authBtn').onclick = async ()=>{
 };
 function traduzErro(m){
   if(/invalid login/i.test(m)) return 'Email ou senha incorretos.';
-  if(/already registered/i.test(m)) return 'Esse email já tem conta. Faça login.';
-  if(/at least 6/i.test(m)) return 'A senha precisa ter no mínimo 6 caracteres.';
+  if(/already registered|already been registered|user_already_exists/i.test(m)) return 'Esse email já tem conta. Clique em "Fazer login".';
+  if(/weak.?password|password.*(requirement|character)/i.test(m)) return 'Senha fraca. Use pelo menos 6 caracteres (se pedir, misture letra, número e símbolo).';
+  if(/at least 6|should be at least/i.test(m)) return 'A senha precisa ter no mínimo 6 caracteres.';
+  if(/invalid.*email|email.*invalid/i.test(m)) return 'Email inválido. Confira se digitou certo.';
+  if(/signups?.*(disabled|not allowed)/i.test(m)) return 'Cadastro desativado no momento. Avise o admin.';
   if(/confirm/i.test(m)) return 'Confirme seu email antes de entrar (veja sua caixa de entrada).';
+  if(/rate limit|too many/i.test(m)) return 'Muitas tentativas. Espere um pouquinho e tente de novo.';
   return m;
 }
 $('#logoutBtn').onclick = async ()=>{ await sb.auth.signOut(); };
