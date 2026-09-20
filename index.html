@@ -154,7 +154,7 @@
       <span id="switchTxt">Ainda não tem conta?</span>
       <button class="btn link" id="switchBtn">Criar conta</button>
     </div>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v15 · ALINHADO</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v16 · PRIVADO</div>
   </div>
 </div>
 
@@ -521,13 +521,23 @@ $('#saveBtn').onclick=async()=>{
 $('#sampleBtn').onclick=()=>{ $('#jsonInput').value=JSON.stringify(SAMPLE,null,2); };
 $('#fileInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('#jsonInput').value=r.result;};r.readAsText(f);};
 
-// ===== DATA (compartilhado por ranking/evolucao/minhas) =====
-async function refreshData(){
-  const {data,error}=await sb.from('sessions')
+// ===== DATA =====
+// Ranking = view publica "ranking" (resumo de TODOS, sem dados privados)
+async function refreshRanking(){
+  const {data,error}=await sb.from('ranking')
     .select('id,player,uploaded_by,user_id,profit_per_hour,profit,kills,duration_seconds,created_at,start_time')
     .order('created_at',{ascending:false}).limit(500);
   if(error){ allSessions=[]; return error; }
   allSessions=data||[]; return null;
+}
+// Meus dados = tabela sessions (o RLS garante que so vem as MINHAS)
+let myRows=[];
+async function refreshMine(){
+  const {data,error}=await sb.from('sessions')
+    .select('id,player,profit_per_hour,profit,kills,duration_seconds,created_at,start_time')
+    .order('created_at',{ascending:false}).limit(500);
+  if(error){ myRows=[]; return error; }
+  myRows=data||[]; return null;
 }
 function whenOf(r){ return r.start_time || r.created_at; }
 function inPeriod(r,p){
@@ -546,7 +556,7 @@ $('#mineChip').onclick=e=>{ rankMine=!rankMine; e.target.classList.toggle('on',r
 $('#metricChip').onclick=e=>{ rankMetric=rankMetric==='profit_per_hour'?'profit':'profit_per_hour';
   e.target.textContent='Ordenar: '+(rankMetric==='profit_per_hour'?'Profit/h':'Profit total'); renderRanking(); };
 $('#refreshRank').onclick=loadRanking;
-async function loadRanking(){ showMsg('#rankMsg','info','Carregando...'); const err=await refreshData();
+async function loadRanking(){ showMsg('#rankMsg','info','Carregando...'); const err=await refreshRanking();
   if(err) return showMsg('#rankMsg','err','Erro: '+err.message); renderRanking(); }
 function renderRanking(){
   let rows=allSessions.filter(r=>inPeriod(r,rankPeriod));
@@ -566,15 +576,15 @@ function renderRanking(){
 // ===== EVOLUÇÃO =====
 $('#refreshEvo').onclick=loadEvolution;
 $('#evoPlayer').onchange=renderEvolution;
-async function loadEvolution(){ showMsg('#evoMsg','info','Carregando...'); const err=await refreshData();
+async function loadEvolution(){ showMsg('#evoMsg','info','Carregando...'); const err=await refreshMine();
   if(err) return showMsg('#evoMsg','err','Erro: '+err.message);
-  const players=[...new Set(allSessions.map(r=>r.player))].sort();
+  const players=[...new Set(myRows.map(r=>r.player))].sort();
   const cur=$('#evoPlayer').value;
   $('#evoPlayer').innerHTML=players.map(p=>`<option${p===cur?' selected':''}>${p}</option>`).join('');
   $('#evoMsg').style.display='none'; renderEvolution(); }
 function renderEvolution(){
   const player=$('#evoPlayer').value;
-  const rows=allSessions.filter(r=>r.player===player)
+  const rows=myRows.filter(r=>r.player===player)
     .slice().sort((a,b)=>new Date(whenOf(a))-new Date(whenOf(b)));
   destroy('chEvo');
   if(!rows.length){ $('#evoStats').innerHTML=''; return showMsg('#evoMsg','info','Sem sessões salvas para este player. Salve algumas hunts na aba Importar.'); }
@@ -603,10 +613,10 @@ function renderEvolution(){
 
 // ===== MINHAS SESSÕES =====
 $('#refreshMine').onclick=loadMine;
-async function loadMine(){ showMsg('#mineMsg','info','Carregando...'); const err=await refreshData();
+async function loadMine(){ showMsg('#mineMsg','info','Carregando...'); const err=await refreshMine();
   if(err) return showMsg('#mineMsg','err','Erro: '+err.message); renderMine(); }
 function renderMine(){
-  const rows=allSessions.filter(r=>currentUser&&r.user_id===currentUser.id);
+  const rows=myRows;
   const tb=$('#mineTable tbody'); tb.innerHTML='';
   if(!rows.length){ $('#mineMsg').style.display='none'; tb.appendChild(el('tr',null,'<td colspan="7" class="muted">Você ainda não salvou nenhuma sessão.</td>')); return; }
   $('#mineMsg').style.display='none';
@@ -622,7 +632,7 @@ async function delSession(id,btn){
   btn.disabled=true; btn.textContent='Apagando...';
   const {error}=await sb.from('sessions').delete().eq('id',id);
   if(error){ btn.disabled=false; btn.textContent='Apagar'; return showMsg('#mineMsg','err','Erro ao apagar: '+error.message); }
-  allSessions=allSessions.filter(r=>r.id!==id); renderMine();
+  myRows=myRows.filter(r=>r.id!==id); renderMine();
   showMsg('#mineMsg','ok','Sessão apagada.');
 }
 
