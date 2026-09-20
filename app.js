@@ -329,7 +329,21 @@ $('#metricChip').onclick=e=>{ rankMetric=rankMetric==='profit_per_hour'?'profit'
 $('#refreshRank').onclick=loadRanking;
 async function loadRanking(){ showMsg('#rankMsg','info','Carregando...'); const err=await refreshRanking();
   if(err) return showMsg('#rankMsg','err','Erro: '+err.message); renderRanking(); }
+function weekStartMs(){ const d=new Date(); const day=(d.getDay()+6)%7; d.setHours(0,0,0,0); d.setDate(d.getDate()-day); return d.getTime(); }
+function renderChampion(){
+  const box=$('#weekChamp'); if(!box) return;
+  const ws=weekStartMs();
+  const wk=allSessions.filter(r=>new Date(whenOf(r)).getTime()>=ws);
+  if(!wk.length){ box.innerHTML='<div class="champ"><span class="cup">🏆</span><div><div class="cname">Sem campeão ainda</div><div class="cmeta">Nenhuma hunt salva nesta semana. Salve suas hunts pra concorrer!</div></div></div>'; return; }
+  const by={};
+  wk.forEach(r=>{ const k=r.uploaded_by||r.player||'—'; by[k]=by[k]||{name:k,profit:0,hunts:0}; by[k].profit+=(r.profit||0); by[k].hunts++; });
+  const top=Object.values(by).sort((a,b)=>b.profit-a.profit)[0];
+  box.innerHTML=`<div class="champ"><span class="cup">🏆</span><div>
+    <div class="cname">Campeão da semana: ${esc(top.name)}</div>
+    <div class="cmeta">${fmt(top.profit)} de lucro em ${top.hunts} hunt(s) esta semana</div></div></div>`;
+}
 function renderRanking(){
+  renderChampion();
   let rows=allSessions.filter(r=>inPeriod(r,rankPeriod));
   if(rankMine&&currentUser) rows=rows.filter(r=>r.user_id===currentUser.id);
   rows=rows.slice().sort((a,b)=>(b[rankMetric]||0)-(a[rankMetric]||0));

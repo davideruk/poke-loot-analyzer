@@ -87,6 +87,11 @@
   .badge{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--panel2);border:1px solid var(--border)}
   .badge.rare{background:#3a2f00;color:var(--statgold);border-color:#5a4a00}
   .badge.me{background:#0f2e4a;color:var(--dragon);border-color:#1e4e78}
+  .champ{display:flex;align-items:center;gap:14px;margin:2px 0 18px;padding:16px 18px;border-radius:var(--r-lg);
+    background:linear-gradient(120deg,rgba(255,138,31,.20),rgba(255,59,59,.08));border:1px solid #5a4a12}
+  .champ .cup{font-size:34px;line-height:1}
+  .champ .cname{font-size:18px;font-weight:800;color:var(--gold)}
+  .champ .cmeta{font-size:13px;color:var(--muted);margin-top:2px}
   .msg{padding:11px 14px;border-radius:var(--r-md);margin-top:12px;font-size:14px;display:none;font-weight:600}
   .msg.ok{background:#0f2e22;color:#7ff0c0;display:block}
   .msg.err{background:#3a1618;color:#ff9c9c;display:block}
@@ -152,7 +157,7 @@
       <span id="switchTxt">Ainda não tem conta?</span>
       <button class="btn link" id="switchBtn">Criar conta</button>
     </div>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v20 · LOOT SPLIT</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v21 · CAMPEÃO</div>
   </div>
 </div>
 
@@ -244,6 +249,7 @@
   <section id="tab-ranking" class="hidden">
     <div class="card">
       <h2>🏆 Ranking dos treinadores</h2>
+      <div id="weekChamp"></div>
       <div class="row" style="margin-bottom:6px;justify-content:space-between">
         <div class="chips" id="periodChips">
           <span class="chip on" data-p="all">Tudo</span>
