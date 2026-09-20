@@ -152,7 +152,7 @@
       <span id="switchTxt">Ainda não tem conta?</span>
       <button class="btn link" id="switchBtn">Criar conta</button>
     </div>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v19 · SEGURO+</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v20 · LOOT SPLIT</div>
   </div>
 </div>
 
@@ -175,6 +175,7 @@
     <div class="tab" data-tab="evolution">📈 Evolução</div>
     <div class="tab" data-tab="ranking">🏆 Ranking</div>
     <div class="tab" data-tab="mine">🗑️ Minhas sessões</div>
+    <div class="tab" data-tab="split">🪙 Split</div>
   </div>
 
   <!-- IMPORTAR -->
@@ -275,6 +276,26 @@
         <tbody></tbody>
       </table>
       <div class="msg" id="mineMsg"></div>
+    </div>
+  </section>
+
+  <!-- LOOT SPLIT -->
+  <section id="tab-split" class="hidden">
+    <div class="card">
+      <h2>🪙 Loot Split — dividir o lucro da hunt</h2>
+      <p class="muted">Adicione cada participante da hunt em grupo (nome, loot bruto e supplies gastos). O sistema calcula o <b>lucro justo por pessoa</b> e <b>quem paga quem</b> pra todos saírem iguais.</p>
+      <textarea id="splitJson" placeholder='Cole aqui o JSON de um player para adicionar automaticamente (opcional)' style="min-height:80px"></textarea>
+      <div class="row" style="margin:10px 0">
+        <button class="btn sec sm" id="splitAddJson">➕ Adicionar do JSON</button>
+        <button class="btn sec sm" id="splitAddManual">➕ Adicionar player manual</button>
+      </div>
+      <table id="splitTable">
+        <thead><tr><th>Nome</th><th class="num">Loot (bruto)</th><th class="num">Supplies</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="row" style="margin-top:12px"><button class="btn" id="splitCalc">Calcular split</button></div>
+      <div class="msg" id="splitMsg"></div>
+      <div id="splitResult"></div>
     </div>
   </section>
 </div>

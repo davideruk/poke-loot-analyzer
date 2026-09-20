@@ -80,12 +80,75 @@ sb.auth.getSession().then(({data})=>onSession(data.session));
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   t.classList.add('active');
-  ['import','dashboard','evolution','ranking','mine'].forEach(n=>$('#tab-'+n).classList.add('hidden'));
+  ['import','dashboard','evolution','ranking','mine','split'].forEach(n=>$('#tab-'+n).classList.add('hidden'));
   $('#tab-'+t.dataset.tab).classList.remove('hidden');
   if(t.dataset.tab==='ranking') loadRanking();
   if(t.dataset.tab==='evolution') loadEvolution();
   if(t.dataset.tab==='mine') loadMine();
+  if(t.dataset.tab==='split') renderSplit();
 });
+
+// ===== LOOT SPLIT =====
+let splitRows=[];
+function renderSplit(){
+  const tb=$('#splitTable tbody'); tb.innerHTML='';
+  if(!splitRows.length){ tb.appendChild(el('tr',null,'<td colspan="4" class="muted">Nenhum player ainda. Adicione acima (do JSON ou manual).</td>')); return; }
+  splitRows.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><input data-i="${i}" data-k="name" value="${esc(r.name)}" placeholder="Nome" style="margin-top:0"></td>`+
+      `<td><input data-i="${i}" data-k="loot" type="number" value="${r.loot}" style="margin-top:0;text-align:right"></td>`+
+      `<td><input data-i="${i}" data-k="supplies" type="number" value="${r.supplies}" style="margin-top:0;text-align:right"></td>`+
+      `<td class="num"><button class="btn danger sm" data-del="${i}">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{ const i=+inp.dataset.i,k=inp.dataset.k; splitRows[i][k]=k==='name'?inp.value:(Number(inp.value)||0); });
+  tb.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ splitRows.splice(+b.dataset.del,1); renderSplit(); });
+}
+$('#splitAddManual').onclick=()=>{ splitRows.push({name:'',loot:0,supplies:0}); renderSplit(); $('#splitMsg').style.display='none'; };
+$('#splitAddJson').onclick=()=>{
+  const raw=$('#splitJson').value.trim();
+  if(!raw) return showMsg('#splitMsg','err','Cole o JSON de um player primeiro.');
+  let data; try{ data=JSON.parse(raw); }catch(e){ return showMsg('#splitMsg','err','JSON inválido: '+e.message); }
+  const S=data.Session||{};
+  splitRows.push({ name:S.Player||(data['Enemies Defeated']?.[0]?.Player)||'Player', loot:S['Raw gains']||0, supplies:S.Supplies||0 });
+  $('#splitJson').value=''; renderSplit(); showMsg('#splitMsg','ok','Player adicionado do JSON.');
+};
+$('#splitCalc').onclick=()=>{
+  const rows=splitRows.filter(r=>String(r.name).trim());
+  if(rows.length<2) return showMsg('#splitMsg','err','Adicione pelo menos 2 players com nome.');
+  const totalLoot=rows.reduce((a,r)=>a+(+r.loot||0),0);
+  const totalSup=rows.reduce((a,r)=>a+(+r.supplies||0),0);
+  const totalProfit=totalLoot-totalSup;
+  const each=totalProfit/rows.length;
+  const bal=rows.map(r=>({name:r.name,b:((+r.loot||0)-(+r.supplies||0))-each}));
+  const payers=bal.filter(x=>x.b>0.5).map(x=>({...x})).sort((a,b)=>b.b-a.b);
+  const recvs =bal.filter(x=>x.b<-0.5).map(x=>({name:x.name,b:-x.b})).sort((a,b)=>b.b-a.b);
+  const transfers=[]; let pi=0,ri=0;
+  while(pi<payers.length&&ri<recvs.length){
+    const amt=Math.min(payers[pi].b,recvs[ri].b);
+    transfers.push({from:payers[pi].name,to:recvs[ri].name,amt:Math.round(amt)});
+    payers[pi].b-=amt; recvs[ri].b-=amt;
+    if(payers[pi].b<0.5)pi++; if(recvs[ri].b<0.5)ri++;
+  }
+  $('#splitMsg').style.display='none';
+  const perRows=rows.map(r=>{
+    const prof=(+r.loot||0)-(+r.supplies||0);
+    return `<tr><td><b>${esc(r.name)}</b></td><td class="num">${fmt(+r.loot||0)}</td><td class="num">${fmt(+r.supplies||0)}</td><td class="num ${prof>=0?'':''}">${fmt(prof)}</td></tr>`;
+  }).join('');
+  $('#splitResult').innerHTML=
+    `<div class="grid" style="margin-top:16px">
+       <div class="stat"><div class="k">Loot total</div><div class="v gold">${fmt(totalLoot)}</div></div>
+       <div class="stat"><div class="k">Supplies total</div><div class="v red">${fmt(totalSup)}</div></div>
+       <div class="stat"><div class="k">Lucro total</div><div class="v ${totalProfit>=0?'green':'red'}">${fmt(totalProfit)}</div></div>
+       <div class="stat"><div class="k">Lucro por player</div><div class="v">${fmt(Math.round(each))}</div></div>
+     </div>
+     <h2 style="margin:20px 0 10px">📊 Por player</h2>
+     <table><thead><tr><th>Nome</th><th class="num">Loot</th><th class="num">Supplies</th><th class="num">Lucro individual</th></tr></thead><tbody>${perRows}</tbody></table>
+     <h2 style="margin:20px 0 10px">💸 Transferências pra equilibrar</h2>`+
+     (transfers.length
+        ? '<table><tbody>'+transfers.map(t=>`<tr><td><b>${esc(t.from)}</b> paga <b>${esc(t.to)}</b></td><td class="num" style="color:var(--gold)">${fmt(t.amt)}</td></tr>`).join('')+'</tbody></table>'
+        : '<p class="muted">Todos já estão equilibrados — nenhuma transferência necessária. ✅</p>');
+};
 
 // ===== PARSE + DASHBOARD =====
 function parseSession(data){
