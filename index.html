@@ -154,7 +154,7 @@
       <span id="switchTxt">Ainda não tem conta?</span>
       <button class="btn link" id="switchBtn">Criar conta</button>
     </div>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v16 · PRIVADO</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:#4a5378;letter-spacing:1px">v17 · SEGURO</div>
   </div>
 </div>
 
@@ -299,6 +299,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = n => (n==null||isNaN(n)) ? '0' : Number(n).toLocaleString('pt-BR');
 const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
 const PAL = ['#ff7a18','#38a8ff','#38d39f','#ffcf3f','#ff3860','#9b6dff','#43c6d8','#f08a3c','#d84fa0','#7ec24b'];
@@ -440,7 +441,7 @@ function fillTable(sel,arr){
   if(!arr.length){ tb.appendChild(el('tr',null,'<td colspan="4" class="muted">Nenhum item</td>')); return; }
   arr.forEach(it=>{
     const rare=it.Rare?' <span class="badge rare">raro</span>':'';
-    tb.appendChild(el('tr',null,`<td>${(it.Item||'').trim()}${rare}</td><td class="num">${fmt(it.Count)}</td><td class="num">${fmt(it['Unit price'])}</td><td class="num">${fmt(it['Total price'])}</td>`));
+    tb.appendChild(el('tr',null,`<td>${esc((it.Item||'').trim())}${rare}</td><td class="num">${fmt(it.Count)}</td><td class="num">${fmt(it['Unit price'])}</td><td class="num">${fmt(it['Total price'])}</td>`));
   });
 }
 
@@ -479,7 +480,7 @@ function openChart(id){
   const m=DASH[id]; if(!m) return;
   $('#modalTitle').textContent=m.title;
   const head='<thead><tr>'+m.cols.map((c,i)=>`<th class="${i?'num':''}">${c}</th>`).join('')+'</tr></thead>';
-  const body='<tbody>'+m.rows.map(r=>'<tr>'+r.map((v,i)=>`<td class="${i?'num':''}">${v}</td>`).join('')+'</tr>').join('')+'</tbody>';
+  const body='<tbody>'+m.rows.map(r=>'<tr>'+r.map((v,i)=>`<td class="${i?'num':''}">${esc(v)}</td>`).join('')+'</tr>').join('')+'</tbody>';
   $('#modalTable').innerHTML=head+body;
   if(modalChart){ modalChart.destroy(); modalChart=null; }
   const cfg=m.make(); cfg.options=cfg.options||{}; cfg.options.maintainAspectRatio=false; cfg.options.responsive=true;
@@ -569,7 +570,7 @@ function renderRanking(){
     const rank=i<3?`<span class="rank-${i+1}">${i+1}º</span>`:(i+1);
     const mine=currentUser&&r.user_id===currentUser.id?' <span class="badge me">você</span>':'';
     const date=whenOf(r)?new Date(whenOf(r)).toLocaleDateString('pt-BR'):'—';
-    tb.appendChild(el('tr',null,`<td>${rank}</td><td><b>${r.player}</b>${mine}</td><td class="muted">${r.uploaded_by||'—'}</td><td class="num">${fmt(r.profit_per_hour)}</td><td class="num">${fmt(r.profit)}</td><td class="num">${fmt(r.kills)}</td><td class="num">${hhmmss(r.duration_seconds)}</td><td>${date}</td>`));
+    tb.appendChild(el('tr',null,`<td>${rank}</td><td><b>${esc(r.player)}</b>${mine}</td><td class="muted">${esc(r.uploaded_by||'—')}</td><td class="num">${fmt(r.profit_per_hour)}</td><td class="num">${fmt(r.profit)}</td><td class="num">${fmt(r.kills)}</td><td class="num">${hhmmss(r.duration_seconds)}</td><td>${date}</td>`));
   });
 }
 
@@ -622,7 +623,7 @@ function renderMine(){
   $('#mineMsg').style.display='none';
   rows.forEach(r=>{
     const date=whenOf(r)?new Date(whenOf(r)).toLocaleDateString('pt-BR'):'—';
-    const tr=el('tr',null,`<td><b>${r.player}</b></td><td class="num">${fmt(r.profit_per_hour)}</td><td class="num">${fmt(r.profit)}</td><td class="num">${fmt(r.kills)}</td><td class="num">${hhmmss(r.duration_seconds)}</td><td>${date}</td>`);
+    const tr=el('tr',null,`<td><b>${esc(r.player)}</b></td><td class="num">${fmt(r.profit_per_hour)}</td><td class="num">${fmt(r.profit)}</td><td class="num">${fmt(r.kills)}</td><td class="num">${hhmmss(r.duration_seconds)}</td><td>${date}</td>`);
     const tdBtn=el('td','num'); const b=el('button','btn danger sm','Apagar'); b.onclick=()=>delSession(r.id,b); tdBtn.appendChild(b); tr.appendChild(tdBtn);
     tb.appendChild(tr);
   });
