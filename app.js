@@ -40,7 +40,7 @@ $('#authBtn').onclick=async()=>{
       if(data.session){ onSession(data.session); }
       else{
         const {data:d2,error:e2}=await sb.auth.signInWithPassword({email,password:pass});
-        if(e2){ showMsg('#authMsg','info','Conta criada! Agora clique em "Fazer login".'); authMode='login'; setTimeout(renderAuthMode,2000);}
+        if(e2){ showMsg('#authMsg','info','Conta criada! Confira seu email para confirmar o cadastro e depois faça login.'); authMode='login'; setTimeout(renderAuthMode,3000);}
         else onSession(d2.session);
       }
     }else{
